@@ -1,0 +1,343 @@
+/* === DENİZALTI SİMÜLASYON RAPORU - YENİ TEMA === */
+/* Tasarım: Modern, Koyu, Veri Odaklı */
+
+/* --- KÖK DEĞİŞKENLER (Renk Paleti) --- */
+:root {
+    --bg-primary: #111827;      /* Ana Arkaplan (Çok Koyu Gri/Mavi) */
+    --bg-secondary: #1f2937;    /* Kart ve Bölüm Arkaplanı (Koyu Gri/Mavi) */
+    --border-color: #374151;    /* Ayırıcılar ve Kenarlıklar */
+    --text-primary: #f9fafb;    /* Ana Başlıklar */
+    --text-secondary: #d1d5db;  /* Paragraf ve Normal Metin */
+    --text-muted: #9ca3af;      /* Daha soluk metinler, etiketler */
+    --accent-primary: #38bdf8;  /* Ana Vurgu Rengi (Açık Mavi) */
+    --accent-secondary: #f59e0b;/* İkincil Vurgu (Maliyet için Amber/Sarı) */
+}
+
+/* --- GENEL SAYFA AYARLARI --- */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- ANA RAPOR KONTEYNERİ --- */
+.report-container {
+    max-width: 1100px;
+    margin: 20px auto;
+    background-color: var(--bg-secondary);
+    padding: 30px 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+/* --- ÜST ARAÇ ÇUBUĞU --- */
+.toolbar {
+    max-width: 1100px;
+    margin: 0 auto 15px auto;
+    padding-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.toolbar h1 {
+    margin: 0;
+    font-size: 2em;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toolbar button {
+    padding: 10px 18px;
+    font-size: 0.9em;
+    font-weight: 500;
+    background-color: var(--accent-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.toolbar button:hover {
+    background-color: #7dd3fc; /* Vurgu renginin açığı */
+    transform: translateY(-1px);
+}
+
+/* --- BÖLÜM BAŞLIKLARI VE GENEL TİPOGRAFİ --- */
+.section {
+    margin-top: 45px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 30px;
+}
+
+.section:first-of-type {
+    margin-top: 0;
+    border-top: none;
+    padding-top: 0;
+}
+
+h2 {
+    font-size: 1.6em;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--accent-primary);
+    padding-bottom: 12px;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+h3 {
+    font-size: 1.3em;
+    color: var(--text-primary);
+    margin-top: 25px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+p, li {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* --- YÖNETİCİ ÖZETİ --- */
+.summary-text {
+    background-color: rgba(56, 189, 248, 0.1);
+    border-left: 5px solid var(--accent-primary);
+    padding: 20px 25px;
+    font-style: normal;
+    font-size: 1.05rem;
+    color: #e0f2fe; /* Vurgu rengine yakın açık bir renk */
+    border-radius: 0 8px 8px 0;
+}
+
+/* --- ÖZET METRİK KARTLARI --- */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* --- GEOMETRİK ANALİZ KARTLARI (YENİ DÜZEN) --- */
+.geometry-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Kartları yatayda ortalar */
+    gap: 20px;
+}
+
+.geometry-grid .metric-card {
+    flex-basis: 300px; /* Kartların temel genişliği */
+    flex-grow: 1; /* Genişleyebilmelerini sağlar */
+    max-width: 400px; /* Çok fazla genişlemelerini önler */
+}
+
+
+.metric-card {
+    background-color: var(--bg-primary);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-primary);
+}
+
+.metric-card .label {
+    font-weight: 500;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+}
+
+.metric-card .value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--accent-primary);
+    line-height: 1.1;
+}
+
+.metric-card .value.cost {
+    color: var(--accent-secondary);
+}
+/* Geometrik metrikler için daha küçük yazı tipi */
+.geometry-grid .metric-card .value {
+    font-size: 1.7em;
+}
+
+
+/* --- TABLO STİLLERİ --- */
+.report-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.report-container th,
+.report-container td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.report-container th {
+    background-color: rgba(55, 65, 81, 0.5); /* gray-700 @ 50% */
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.report-container tr:nth-of-type(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.report-container tr:hover {
+    background-color: rgba(56, 189, 248, 0.05);
+}
+
+/* --- GRAFİK ALANLARI --- */
+.chart-container {
+    margin-top: 30px;
+}
+/* Geometrik Analiz ile Isı Haritası arasını açma */
+#report-geometry-metrics + .chart-container {
+    margin-top: 45px;
+}
+
+/* Helikopter Zaman Dökümü ile Maliyet Dökümü arasını açma */
+#helo-time-pie-chart-container + #cost-breakdown-container {
+    margin-top: 45px;
+}
+
+
+.chart-desc {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    margin-top: -15px;
+    margin-bottom: 20px;
+}
+
+.report-chart {
+    width: 100%;
+    min-height: 400px;
+    background-color: rgba(0,0,0,0.2); /* Grafiğin arkasında hafif koyu bir katman */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* --- TOOLTIP VE İKON STİLLERİ --- */
+.info-icon {
+    cursor: help;
+    margin-left: 8px;
+    color: var(--text-muted);
+    font-weight: 500;
+    position: relative;
+    font-size: 0.9em;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease-in-out;
+}
+.info-icon:hover {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    background-color: rgba(56, 189, 248, 0.1);
+}
+
+.info-icon .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    width: 320px;
+    background-color: #2b384c; /* Arkaplandan biraz daha açık */
+    color: var(--text-secondary);
+    text-align: left;
+    border-radius: 6px;
+    padding: 14px 18px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-weight: normal;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+}
+.info-icon .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -7px;
+    border-width: 7px;
+    border-style: solid;
+    border-color: #2b384c transparent transparent transparent;
+}
+.info-icon:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+
+/* --- YAZDIRMA STİLLERİ (Ekran temasından bağımsız) --- */
+@media print {
+    :root { /* Yazdırma için renkleri sıfırla */
+        --bg-primary: #ffffff;
+        --bg-secondary: #ffffff;
+        --border-color: #dee2e6;
+        --text-primary: #000000;
+        --text-secondary: #000000;
+        --text-muted: #555555;
+    }
+    
+    body {
+        background-color: #fff;
+        padding: 0;
+        margin: 1cm;
+    }
+
+    .toolbar, .info-icon {
+        display: none !important;
+    }
+
+    .report-container {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+    }
+    
+    .metric-card, .summary-text, .geometry-grid .metric-card {
+        border: 1px solid #ccc;
+    }
+
+    .section, .metric-card, .chart-container, .geometry-grid {
+        page-break-inside: avoid;
+    }
+    
+    .report-chart {
+        border: 1px solid #ccc;
+    }
+}

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simülasyon Sonuç Raporu</title>
+    <link rel="stylesheet" href="report.css">
+    
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+<body>
+    <div class="toolbar">
+        <h1>Simülasyon Sonuç Raporu</h1>
+        <button id="createPdfBtn">Bu Raporu PDF Olarak İndir</button>
+    </div>
+
+    <div id="report-content" class="report-container">
+        
+        <div class="section">
+            <h2>Yönetici Özeti</h2>
+            <p id="executive-summary" class="summary-text">
+                </p>
+        </div>
+
+        <div class="section">
+            <h2>Genel Bakış ve İstatistikler</h2>
+            <div id="report-summary" class="summary-grid">
+                </div>
+        </div>
+        
+        <div class="section">
+            <h2>Simülasyon Parametreleri</h2>
+            <div id="report-params-table">
+                </div>
+        </div>
+
+        <div class="section">
+            <h2>Operasyonel Verimlilik</h2>
+            <div id="helo-time-pie-chart-container" class="chart-container">
+                <h3>Helikopter Zaman Dökümü</h3>
+                <p class="chart-desc">Helikopterin operasyon süresince zamanını hangi aktivitelere harcadığını gösterir.</p>
+                <div id="helo-time-pie-chart" class="report-chart"></div>
+            </div>
+             <div id="cost-breakdown-container" class="chart-container">
+                <h3>Detaylı Maliyet Dökümü</h3>
+                <p class="chart-desc">Toplam operasyon maliyetinin kaynaklara göre dağılımı.</p>
+                <div id="cost-breakdown-table">
+                    </div>
+            </div>
+            <div id="route-comparison-container" class="chart-container">
+                <h3>Helikopter Rota Optimizasyon Analizi</h3>
+                <p class="chart-desc">Rota optimizasyonunun, helikopterin katettiği mesafeyi nasıl kısalttığını gösterir.</p>
+                <div id="route-comparison-chart" class="report-chart"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Geometrik ve Taktiksel Analiz</h2>
+            <div id="report-geometry-metrics">
+                 </div>
+            <div class="chart-container">
+                <h3>Tespit Isı Haritası</h3>
+                <p class="chart-desc">Başarılı tespitlerin operasyon sahası üzerindeki coğrafi yoğunluğunu gösterir.</p>
+                <div id="detection-heatmap" class="report-chart"></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Tespit Analiz Grafikleri</h2>
+            <div class="chart-container">
+                <h3>Sonobuoy Tespit Katkısı</h3>
+                <p class="chart-desc">Hangi sonobuoy'un toplam tespitlerin yüzde kaçını gerçekleştirdiğini gösterir.</p>
+                <div id="buoy-effectiveness-chart" class="report-chart"></div>
+            </div>
+            <div class="chart-container">
+                <h3>Tespit Zamanı Dağılımı</h3>
+                <p class="chart-desc">Tespitlerin simülasyon zamanı boyunca hangi anlarda yoğunlaştığını gösteren bir histogram.</p>
+                <div id="detection-time-chart" class="report-chart"></div>
+            </div>
+            <div class="chart-container">
+                <h3>Tespitlerin Derinliğe Göre Dağılımı</h3>
+                <p class="chart-desc">Tespitlerin, denizaltı ile sonobuoy arasındaki dikey mesafe farkına göre nasıl dağıldığını gösterir.</p>
+                <div id="detection-depth-chart" class="report-chart"></div>
+            </div>
+        </div>
+
+    </div>
+    <script src="js/report_builder.js"></script>
+    <script src="js/report_visuals.js"></script>
+    <script src="js/report.js"></script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Denizaltı Tespit Simülasyonu</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="main-title-container">
+             <h1>Denizaltı Tespit Simülasyonu</h1>
+             <button id="methodologyBtn" class="methodology-button">Metodoloji</button>
+        </div>
+
+        <div class="parameters">
+            <h2>Simülasyon Parametreleri</h2>
+
+            <fieldset class="param-group">
+                <legend>Saha ve Arama Tipi Parametreleri</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="sahaUzunluk">Saha Uzunluğu (NM): <span class="info-icon">❓<span class="tooltip-text">Simülasyonun yapılacağı dikdörtgen operasyon alanının yatay (X ekseni) toplam uzunluğudur (Deniz Mili - NM). Denizaltının genellikle bu eksen boyunca hareket ettiği varsayılır (datum olmadığında X=0'dan başlar). Helikopter operasyon süresi ve denizaltının sahayı geçiş süresi doğrudan bu parametreden etkilenir.</span></span></label>
+                        <input type="number" id="sahaUzunluk" min="1" placeholder="Örn: 10">
+                        <span class="error-message" id="sahaUzunlukError"></span>
+                    </div>
+                    <div>
+                        <label for="sahaGenislik">Saha Genişliği (NM): <span class="info-icon">❓<span class="tooltip-text">Simülasyonun yapılacağı dikdörtgen operasyon alanının dikey (Y ekseni) toplam genişliğidir (Deniz Mili - NM). Denizaltının Y eksenindeki başlangıç konumu (datum olmadığında) ve Y rotasındaki sapma miktarı bu parametreye göre ölçeklenir. Sonobuoy yerleşim paternleri de bu genişliği dikkate alarak oluşturulur.</span></span></label>
+                        <input type="number" id="sahaGenislik" min="1" placeholder="Örn: 10">
+                        <span class="error-message" id="sahaGenislikError"></span>
+                    </div>
+                    <div style="grid-column: 1 / -1;"> <label for="datumBilgisiMevcut" style="flex-direction: row; align-items: center;">
+                            Datum Bilgisi Mevcut mu?:
+                            <input type="checkbox" id="datumBilgisiMevcut" style="margin-left: 10px; width: 1.1em; height: 1.1em; vertical-align: middle;">
+                            <span class="info-icon" style="margin-left: 8px;">❓<span class="tooltip-text">İşaretlenirse, sonobuoy yerleşimi için bir datum (tahmini denizaltı konumu) kullanılacak ve 'Sonobuoy Yerleşim Paterni' otomatik olarak 'Dairesel Patern' seçilecektir. Denizaltı başlangıç konumu, girilen datum noktasını merkez alan ve yarıçapı mevcut <strong>'Sonar Yarıçapı' parametresinin dört katına kadar</strong> olabilen dairesel bir alan içinden rastgele seçilir. Bu nokta saha dışına düşerse, en yakın saha sınırına çekilir. İşaretlenmezse, denizaltı sahanın batı kenarından (X=0) rastgele bir Y pozisyonundan başlar.</span></span>
+                        </label>
+                    </div>
+                    <div id="datumInputsContainer" style="display: none; grid-column: 1 / -1; margin-top: -10px;">
+                        <div class="param-grid" style="margin-top:15px;">
+                             <div>
+                                <label for="datumX">Datum X Koordinatı (NM): <span class="info-icon">❓<span class="tooltip-text">Eğer 'Datum Bilgisi Mevcut mu?' işaretliyse, denizaltının tahmini X koordinatıdır (NM). Saha sol kenarı (X=0) referans alınır. Denizaltının rastgele başlangıç konumu ve dairesel sonobuoy paterni bu koordinatı merkez alır. Saha Uzunluğu'ndan büyük olamaz.</span></span></label>
+                                <input type="number" id="datumX" step="0.1" placeholder="Örn: 5.0">
+                                <span class="error-message" id="datumXError"></span>
+                            </div>
+                            <div>
+                                <label for="datumY">Datum Y Koordinatı (NM): <span class="info-icon">❓<span class="tooltip-text">Eğer 'Datum Bilgisi Mevcut mu?' işaretliyse, denizaltının tahmini Y koordinatıdır (NM). Saha alt kenarı (Y=0) referans alınır. Denizaltının rastgele başlangıç konumu ve dairesel sonobuoy paterni bu koordinatı merkez alır. Saha Genişliği'nden büyük olamaz.</span></span></label>
+                                <input type="number" id="datumY" step="0.1" placeholder="Örn: 5.0">
+                                <span class="error-message" id="datumYError"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="param-group">
+                <legend>Sonobuoy Parametreleri</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="sonobuoyAdedi">Sonobuoy Adedi: <span class="info-icon">❓<span class="tooltip-text">Operasyon alanına bırakılması planlanan toplam sonobuoy sayısıdır. Bu sayı, seçilen yerleşim paternine göre sahaya dağıtılır. Izgara (Serpantin) paterninde, saha boyutları ve bu sayıya göre fiili yerleştirilebilen sonobuoy adedi, girilen bu değerden az olabilir; bu durumda simülasyon fiili sayıyla devam eder. Helikopter taşıma kapasitesi bu sayıyı etkileyebilir (birden fazla sorti gerekebilir).</span></span></label>
+                        <input type="number" id="sonobuoyAdedi" min="1" placeholder="Örn: 5"> <span class="error-message" id="sonobuoyAdediError"></span>
+                    </div>
+                    <div>
+                        <label for="sonobuoyYerlesimPaterni">Sonobuoy Yerleşim Paterni: <span class="info-icon">❓<span class="tooltip-text">Sonobuoy'ların sahaya nasıl bir geometrik düzende yerleştirileceğini belirler. 'Datum Bilgisi Mevcut mu?' işaretliyse otomatik olarak 'Dairesel Patern' seçilir ve diğer paternler devre dışı kalır. Her paternin kendine özgü bir yerleşim algoritması vardır ve farklı operasyonel senaryolara uygun olabilirler. Helikopter rota optimizasyonu, bu paternle üretilen ham bırakma sıralamasını iyileştirebilir.</span></span></label>
+                        <select id="sonobuoyYerlesimPaterni">
+                            <option value="grid" selected>Izgara (Serpantin)</option>
+                            <option value="barrier_vertical_middle">Dikey Orta Bariyer</option>
+                            <option value="random">Rastgele Yerleşim</option>
+                            <option value="circular">Dairesel Patern</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sonarYaricap">Sonar Yarıçapı (NM): <span class="info-icon">❓<span class="tooltip-text">Bir sonobuoy'un, algılayıcısının bulunduğu derinliği merkez alan <strong>3 boyutlu küresel</strong> algılama hacminin yarıçapıdır (NM). Denizaltı, bu küresel hacmin içine girdiğinde tespit için geometrik koşul sağlanmış olur. Gerçek tespit, bu koşula ek olarak 'Sonar Tespit Başarı Oranı'na bağlı olasılıksal bir testle ('zar atma') belirlenir.</span></span></label>
+                        <input type="number" id="sonarYaricap" min="0.1" step="0.1" placeholder="Örn: 2.0">
+                        <span class="error-message" id="sonarYaricapError"></span>
+                    </div>
+                    <div>
+                        <label for="sonobuoyCalismaSuresi">Sonobuoy Çalışma Süresi (Dk): <span class="info-icon">❓<span class="tooltip-text">Bir sonobuoy'un suya bırakıldığı andan itibaren ne kadar süreyle aktif kalacağını ve dinleme yapacağını belirtir (Dakika). Bu süre sonunda sonobuoy etkisiz hale gelir. Denizaltının bir sonobuoy tarafından tespit edilebilmesi için, denizaltı sonar menziline girdiğinde sonobuoy'un bu çalışma süresi içinde olması gerekir.</span></span></label>
+                        <input type="number" id="sonobuoyCalismaSuresi" min="1" placeholder="Örn: 60">
+                        <span class="error-message" id="sonobuoyCalismaSuresiError"></span>
+                    </div>
+                    <div>
+                        <label for="sonobuoyDinlemeDerinligi">Sonobuoy Dinleme Derinliği (m): <span class="info-icon">❓<span class="tooltip-text">Sonobuoy algılayıcısının (hidrofon) suya bırakıldıktan sonra indiği ve aktif olarak dinleme yaptığı <strong>operasyonel derinliktir</strong> (metre). Bu derinlik, sonobuoy'un anlık X-Y konumuyla birlikte, <strong>'Sonar Yarıçapı'</strong> parametresiyle belirlenen 3 boyutlu küresel tespit hacminin dikey merkezini oluşturur. Tek başına bir tespit menzili ifade etmez; tespit yeteneği 'Sonar Yarıçapı' ile birlikte bu derinlik etrafında değerlendirilir.</span></span></label>
+                        <input type="number" id="sonobuoyDinlemeDerinligi" min="0" placeholder="Örn: 50">
+                        <span class="error-message" id="sonobuoyDinlemeDerinligiError"></span>
+                    </div>
+                    <div>
+                        <label for="sonobuoyBirakmaSuresi">Sonobuoy Bırakma Süresi (Dk): <span class="info-icon">❓<span class="tooltip-text">Helikopterin bir sonobuoy'u hedef noktada bırakmak için harcadığı süredir (Dakika). Bu süre helikopterin toplam operasyon süresine eklenir. Sonobuoy, helikopterin bırakma noktasına ulaştığı anda (`sbAtisZamaniDk`) aktif hale gelir ve dinlemeye başlar, bu süre helikopterin ayrılmasını beklemez.</span></span></label>
+                        <input type="number" id="sonobuoyBirakmaSuresi" min="0.1" step="0.1" placeholder="Örn: 0.5">
+                        <span class="error-message" id="sonobuoyBirakmaSuresiError"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="param-group">
+                <legend>Helikopter Parametreleri</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="helikopterSurat">Helikopter Sürati (Knot): <span class="info-icon">❓<span class="tooltip-text">Sonobuoy'ları taşıyan helikopterin ortalama seyir hızıdır (Knot). Bu hız, helikopterin üsten sonobuoy bırakma noktalarına gidiş-geliş sürelerini ve bir bırakma noktasından diğerine geçiş süresini hesaplamada kullanılır, dolayısıyla toplam operasyon süresini doğrudan etkiler.</span></span></label>
+                        <input type="number" id="helikopterSurat" min="1" placeholder="Örn: 100">
+                        <span class="error-message" id="helikopterSuratError"></span>
+                    </div>
+                    <div>
+                        <label for="helikopterStartX">Helikopter Başlangıç X (NM) (Üs): <span class="info-icon">❓<span class="tooltip-text">Helikopterin operasyona başladığı, sonobuoy ikmali için döndüğü ve operasyon sonunda geri döndüğü ana üssün X koordinatıdır (NM). Saha sol kenarı (X=0) referans alınır. Tüm rota hesaplamaları bu noktadan başlar ve burada biter (veya sortiler arasında buraya uğrar).</span></span></label>
+                        <input type="number" id="helikopterStartX" min="0" step="0.1" placeholder="Örn: 0.0">
+                        <span class="error-message" id="helikopterStartXError"></span>
+                    </div>
+                    <div>
+                        <label for="helikopterStartY">Helikopter Başlangıç Y (NM) (Üs): <span class="info-icon">❓<span class="tooltip-text">Helikopterin operasyona başladığı, sonobuoy ikmali için döndüğü ve operasyon sonunda geri döndüğü ana üssün Y koordinatıdır (NM). Saha alt kenarı (Y=0) referans alınır.</span></span></label>
+                        <input type="number" id="helikopterStartY" min="0" step="0.1" placeholder="Örn: 0.0">
+                        <span class="error-message" id="helikopterStartYError"></span>
+                    </div>
+                     <div>
+                        <label for="helikopterTasiyabilecegiKapasite">Helikopter Taşıma Kapasitesi (Adet): <span class="info-icon">❓<span class="tooltip-text">Helikopterin bir seferde (sortide) taşıyabileceği maksimum sonobuoy adedidir. Eğer toplam bırakılacak sonobuoy sayısı bu kapasiteyi aşarsa, helikopter üsse dönüp ikmal yapmak ve birden fazla sorti gerçekleştirmek zorunda kalır. Bu, toplam operasyon süresini artırır.</span></span></label>
+                        <input type="number" id="helikopterTasiyabilecegiKapasite" min="1" placeholder="Örn: 5">
+                        <span class="error-message" id="helikopterTasiyabilecegiKapasiteError"></span>
+                    </div>
+                    <div>
+                        <label for="sonobuoyIkmalSuresiDk">Sonobuoy İkmal Süresi (Dk): <span class="info-icon">❓<span class="tooltip-text">Helikopterin, bir sortiyi tamamlayıp üsse döndükten sonra yeni sonobuoy'ları yüklemesi ve bir sonraki sortiye hazırlanması için geçen süredir (Dakika). Bu süre, birden fazla sorti gerektiğinde helikopterin toplam operasyon süresine eklenir.</span></span></label>
+                        <input type="number" id="sonobuoyIkmalSuresiDk" min="0" step="1" placeholder="Örn: 10">
+                        <span class="error-message" id="sonobuoyIkmalSuresiDkError"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="param-group">
+                <legend>Denizaltı Parametreleri</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="denizaltiSurati">Denizaltı Sürati (Knot): <span class="info-icon">❓<span class="tooltip-text">Denizaltının ortalama seyir hızıdır (Knot). Bu hız, denizaltının sahayı ne kadar sürede geçeceğini ve yolundaki kontrol noktalarına ne zaman ulaşacağını belirler. Tespit mantığında, denizaltının anlık konumu bu hıza göre hesaplanır. Hız '0' girilir ve 'Datum Bilgisi Mevcut mu?' işaretlenirse, denizaltı sabit (statik) bir hedef olarak kabul edilir.</span></span></label>
+                        <input type="number" id="denizaltiSurati" min="0" placeholder="Örn: 5"> <span class="error-message" id="denizaltiSuratiError"></span>
+                    </div>
+                    <div>
+                        <label for="denizaltiOrtDerinlik">Denizaltı Ortalama Derinlik (m): <span class="info-icon">❓<span class="tooltip-text">Denizaltının seyahat ettiği ana, ortalama derinlik seviyesidir (metre). 'Denizaltı Derinlik Sapma' parametresiyle birlikte, denizaltının içinde hareket edeceği dikey 'derinlik zarfını' tanımlar. Bu değer, sonobuoy dinleme derinliği ile birlikte 3D tespit mesafesini etkileyen önemli bir faktördür.</span></span></label>
+                        <input type="number" id="denizaltiOrtDerinlik" min="0" placeholder="Örn: 100">
+                        <span class="error-message" id="denizaltiOrtDerinlikError"></span>
+                    </div>
+                    <div>
+                        <label for="denizaltiDerinlikSapma">Denizaltı Derinlik Sapma (m): <span class="info-icon">❓<span class="tooltip-text">Denizaltının, 'Denizaltı Ortalama Derinlik' parametresiyle belirlenen seviyeden her iki yöne (yukarı/aşağı) en fazla ne kadar sapabileceğini belirten maksimum değerdir (metre). Bu, denizaltının içinde hareket ettiği toplam dikey bandın ('derinlik zarfının') yarısıdır. Simülasyonda, her bir denizaltı yolu için başlangıç derinliği bu zarf içinden rastgele seçilir ve yol boyunca derinlik, bu zarfın sınırları içinde kalacak şekilde kademeli ve rastgele olarak değişir.</span></span></label>
+                        <input type="number" id="denizaltiDerinlikSapma" min="0" placeholder="Örn: 20">
+                        <span class="error-message" id="denizaltiDerinlikSapmaError"></span>
+                    </div>
+                    <div>
+                        <label for="denizaltiRotaSapmaYuzdesi">Denizaltı Y Rota Sapma Oranı (0-1): <span class="info-icon">❓<span class="tooltip-text">Denizaltının, her bir simülasyon yolculuğuna başladığı kendi 'ana Y ekseninden' toplamda ne kadar sapabileceğini 'Saha Genişliği'ne oranla belirtir (0-1 arası bir değer; 0.1 = %10). Bu oran, denizaltının kendi ana Y ekseninin her iki tarafında ne kadarlık bir Y mesafesi kadar sapabileceğini tanımlar (Maksimum Y Sapma = Oran * Saha Genişliği). Denizaltı, bu 'sapma koridoru' içinde ve saha sınırları dahilinde kalarak, yol boyunca Y konumunu kademeli ve rastgele olarak değiştirir.</span></span></label>
+                        <input type="number" id="denizaltiRotaSapmaYuzdesi" min="0" max="1" step="0.01" placeholder="Örn: 0.1">
+                        <span class="error-message" id="denizaltiRotaSapmaYuzdesiError"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+             <fieldset class="param-group">
+                <legend>Çevresel ve Tespit Faktörleri</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="akintiHizi">Akıntı Sürati (Knot): <span class="info-icon">❓<span class="tooltip-text">Sonobuoy'ları etkileyen ortalama su akıntısının hızıdır (Knot). Değer sıfırdan büyükse, sonobuoy'lar suya bırakıldıktan sonra bu hızda ve 'Akıntı Yönü' ile belirtilen istikamette sürüklenirler. Sürüklenme, sonobuoy'ların zamanla ilk bırakıldıkları yerden uzaklaşmasına neden olur ve tespit olasılığını etkileyebilir. Saha dışına sürüklenen sonobuoy'lar etkisizleşir.</span></span></label>
+                        <input type="number" id="akintiHizi" min="0" step="0.1" placeholder="Örn: 1.5">
+                        <span class="error-message" id="akintiHiziError"></span>
+                    </div>
+                    <div>
+                        <label for="akintiYonu">Akıntı Yönü (Derece): <span class="info-icon">❓<span class="tooltip-text">Akıntının yönünü derece cinsinden belirtir (0-360 derece arası; 0° Kuzey, 90° Doğu, 180° Güney, 270° Batı). 'Akıntı Hızı' sıfırdan büyükse, sonobuoy'lar bu yönde sürüklenir. Akıntı hızı sıfır ise bu parametrenin bir etkisi olmaz.</span></span></label>
+                        <input type="number" id="akintiYonu" min="0" max="360" step="1" placeholder="Örn: 90">
+                        <span class="error-message" id="akintiYonuError"></span>
+                    </div>
+                    <div>
+                        <label for="sonarTespitBasariOrani">Sonar Tespit Başarı Oranı (0-1): <span class="info-icon">❓<span class="tooltip-text">Bir denizaltı, bir sonobuoy'un 3D sonar tespit yarıçapı içine girdiğinde ve sonobuoy aktif olduğunda, bu sonobuoy tarafından <strong>başarıyla tespit edilme olasılığıdır</strong> (0-1 arası bir değer; 0.8 = %80). Bu, 'zar atma' olarak adlandırılan olasılıksal bir testle modellenir. Tespit denemesi, denizaltının yolu üzerindeki her bir 'kontrol noktasında' (Denizaltı Yolu Detay Seviyesi ile belirlenir) ve menzile giren her aktif sonobuoy için, o yolda henüz tespit gerçekleşmemişse yapılır.</span></span></label>
+                        <input type="number" id="sonarTespitBasariOrani" min="0" max="1" step="0.01" placeholder="Örn: 0.8">
+                        <span class="error-message" id="sonarTespitBasariOraniError"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="param-group">
+                <legend>Maliyet Analizi Parametreleri</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="costHeloHour">Birim Uçuş Saati Maliyeti ($): <span class="info-icon">❓<span class="tooltip-text">Helikopterin bir saatlik operasyon maliyetidir. Toplam helikopter operasyon süresi bu değerle çarpılarak uçuş maliyeti bulunur.</span></span></label>
+                        <input type="number" id="costHeloHour" min="0" placeholder="Örn: 5000">
+                        <span class="error-message" id="costHeloHourError"></span>
+                    </div>
+                    <div>
+                        <label for="costSonobuoy">Sonobuoy Başına Maliyet ($): <span class="info-icon">❓<span class="tooltip-text">Tek bir sonobuoy'un maliyetidir. Toplam bırakılan sonobuoy adedi bu değerle çarpılarak malzeme maliyeti bulunur.</span></span></label>
+                        <input type="number" id="costSonobuoy" min="0" placeholder="Örn: 1200">
+                        <span class="error-message" id="costSonobuoyError"></span>
+                    </div>
+                </div>
+            </fieldset>
+            
+            <fieldset class="param-group">
+                <legend>Optimizasyon Ayarları</legend>
+                <div class="param-grid" style="grid-template-columns: 1fr;"> <div>
+                    <label for="rotaOptimizasyonuEtkin" style="flex-direction: row; align-items: center;">
+                        Helikopter Rota Optimizasyonunu Etkinleştir:
+                        <input type="checkbox" id="rotaOptimizasyonuEtkin" style="margin-left: 10px; width: 1.1em; height: 1.1em; vertical-align: middle;"> <span class="info-icon" style="margin-left: 8px;">❓<span class="tooltip-text">Seçili ise, helikopterin sonobuoy bırakma sırası, her bir sorti için ayrı ayrı olmak üzere, toplam uçuş mesafesini/süresini azaltacak şekilde 'En Yakın Komşu' sezgiseli kullanılarak optimize edilir. Helikopter, mevcut konumundan (başlangıçta üs, sonra bir önceki bıraktığı sonobuoy) kendisine en yakın bırakılmamış sonobuoy'a gider. Kapasitesi dolduğunda veya bırakacak sonobuoy kalmadığında (veya ikmal için) üsse döner. Seçili değilse, seçilen sonobuoy yerleşim paterninin ürettiği ham bırakma sırası kullanılır. Optimizasyon, 'Helikopter Toplam Operasyon Süresi'ni önemli ölçüde etkileyebilir.</span></span>
+                    </label>
+                </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="param-group">
+                <legend>Simülasyon Kontrol ve Görselleştirme</legend>
+                <div class="param-grid">
+                    <div>
+                        <label for="simulasyonDenizaltiYolSayisi">Monte Carlo Yol Sayısı: <span class="info-icon">❓<span class="tooltip-text">Tespit olasılığının ve diğer istatistiklerin hesaplanması için kaç farklı rastgele denizaltı yolunun simüle edileceğini belirler. Daha yüksek bir sayı, genellikle daha kararlı ve istatistiksel olarak daha güvenilir sonuçlar (daha dar güven aralığı) anlamına gelir ancak simülasyon süresini de artırır. Bu, Monte Carlo simülasyonunun temel deneme sayısıdır.</span></span></label>
+                        <input type="number" id="simulasyonDenizaltiYolSayisi" min="100" step="100" placeholder="Örn: 1000"> <span class="error-message" id="simulasyonDenizaltiYolSayisiError"></span>
+                    </div>
+                    <div>
+                        <label for="ornekYolSayisi">Grafik İçin Örnek Yol Sayısı: <span class="info-icon">❓<span class="tooltip-text">2D ve 3D görselleştirmelerde, simüle edilen toplam denizaltı yollarından kaç tanesinin (hem tespit edilen hem de edilemeyenlerden dengeli bir şekilde seçilerek) çizileceğini belirler. Bu, performansı korumak ve grafiği okunabilir kılmak için tüm yollar yerine temsili bir alt küme gösterilmesini sağlar.</span></span></label>
+                        <input type="number" id="ornekYolSayisi" min="2" max="100" placeholder="Örn: 10">
+                        <span class="error-message" id="ornekYolSayisiError"></span>
+                    </div>
+                     <div>
+                        <label for="denizaltiYolDetaySeviyesi">Denizaltı Yolu Detay Seviyesi: <span class="info-icon">❓<span class="tooltip-text">Denizaltının tüm saha boyunca izleyeceği yolun kaç adet ayrık kontrol noktasına bölüneceğini belirler (Düşük: 100, Orta: 250, Yüksek: 500 nokta). Tespit denemeleri ('zar atma') bu kontrol noktalarında yapılır. Daha yüksek detay seviyesi (daha fazla nokta), denizaltının yolunu daha hassas temsil eder ve bir sonobuoy'un tespit alanı içinden geçerken daha fazla sayıda tespit denemesi yapılmasına olanak tanır, bu da tespit olasılığını etkileyebilir ancak simülasyon süresini artırır.</span></span></label>
+                        <select id="denizaltiYolDetaySeviyesi">
+                            <option value="dusuk">Düşük (100 Nokta)</option>
+                            <option value="orta" selected>Orta (250 Nokta)</option>
+                            <option value="yuksek">Yüksek (500 Nokta)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="gorsellestirmeTipi">Görselleştirme Tipi:</label> <select id="gorsellestirmeTipi">
+                            <option value="2d" selected>2D Görselleştirme</option>
+                            <option value="3d">3D Görselleştirme</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="param-group">
+                <legend>Senaryo Yönetimi</legend>
+                <div class="button-group">
+                    <button id="saveSettingsBtn">Ayarları Kaydet</button>
+                    <button id="loadSettingsBtn">Kaydedilen Ayarları Yükle</button>
+                    <button id="resetSettingsBtn" class="danger">Formu Temizle</button>
+                </div>
+                <div class="button-group" style="margin-top: 10px;">
+                    <button id="exportScenarioBtn">Senaryoyu Dışa Aktar (JSON)</button>
+                    <button id="importScenarioBtn">Senaryoyu İçe Aktar (JSON)</button>
+                    <input type="file" id="importScenarioInput" accept=".json" style="display: none;">
+                </div>
+            </fieldset>
+            
+            <div id="progressContainer" class="progress-container" style="display: none;">
+                <div id="progressBar" class="progress-bar"></div>
+                <span id="progressText" class="progress-text"></span>
+            </div>
+            
+            <button id="runSimBtn" style="margin-top: 25px;">
+                <span class="btn-text">Simülasyonu Başlat</span>
+                <span class="spinner"></span>
+            </button>
+        </div>
+
+        <div id="simulationErrorArea" class="error-message-general" style="display: none;"></div>
+        <div id="userMessagesArea" class="user-message-info" style="display: none;"></div>
+
+        <div class="results">
+            <h2>Simülasyon Sonuçları</h2>
+
+            <div class="results-summary-container">
+
+                <div class="key-metric-display">
+                    <h3>Genel Tespit Olasılığı<span class="info-icon">❓<span class="tooltip-text">Monte Carlo simülasyonu sonucunda, rastgele bir denizaltı yolunun, kurulan sonobuoy bariyeri tarafından tespit edilme istatistiksel olasılığıdır.</span></span></h3>
+                    <p class="key-value" id="tespitOlasiligiValue">%0.00</p>
+                    <p class="key-detail" id="tespitOlasiligiDetails">(%95 Güven Aralığı: %0.00 - %0.00 | Varyans: 0.0000)<span class="info-icon">❓<span class="tooltip-text">Tespit olasılığı tahmininin %95 ihtimalle içinde bulunduğu aralığı ve bu tahminin istatistiksel varyansını (kararlılığını) gösterir. Dar aralık ve düşük varyans, sonucun daha güvenilir olduğunu ifade eder.</span></span></p>
+                </div>
+
+                <div class="secondary-metrics-grid">
+                    
+                    <span class="metric-label">Denizaltı Ortalama Geçiş Süresi<span class="info-icon">❓<span class="tooltip-text">Denizaltının, hızı sabitken operasyon sahasının bir ucundan diğerine geçmesinin ne kadar süreceğini gösteren teorik bir değerdir.</span></span></span>
+                    <span class="metric-value" id="denizaltiGecisSuresi">0.00 dk</span>
+                    <hr>
+                    
+                    <span class="metric-label">Ortalama Tespit Zamanı<span class="info-icon">❓<span class="tooltip-text">Simülasyondaki başarılı tespitlerin, denizaltının yolculuğuna başladığı andan itibaren ortalama kaç dakika sonra gerçekleştiğini gösterir. Bu, bariyerin ne kadar hızlı reaksiyon verdiğinin bir ölçüsüdür.</span></span></span>
+                    <span class="metric-value" id="ortalamaTespitZamani">0.00 dk</span>
+                    <hr>
+
+                    <span class="metric-label">Helikopter Operasyon Süresi<span class="info-icon">❓<span class="tooltip-text">Helikopterin üsten ayrılıp tüm sonobuoy'ları bırakıp üsse geri döndüğü ana kadar geçen toplam süredir. İntikal, bırakma ve ikmal sürelerini içerir.</span></span></span>
+                    <span class="metric-value" id="helikopterOperasyonSuresiValue">0.00 dk</span>
+                    <hr>
+
+                    <div class="optimization-metric-group">
+                        <span class="metric-label">Optimizasyon Kazancı (Süre)<span class="info-icon">❓<span class="tooltip-text">'Helikopter Rota Optimizasyonu' aktif edildiğinde, optimize edilmemiş rotaya kıyasla kaç dakika zaman kazanıldığını gösterir.</span></span></span>
+                        <span class="metric-value" id="kazanilanSure">0.00 dk</span>
+                        <p class="optimization-note" id="helikopterOperasyonSuresiUnoptimizedInfo">(Optimizasyon olmasaydı süre yaklaşık 0.00 dk olacaktı.)</p>
+                    </div>
+                    <hr>
+                    
+                    <span class="metric-label">Toplam Operasyon Maliyeti<span class="info-icon">❓<span class="tooltip-text">Kullanılan sonobuoy'ların maliyeti ile helikopterin toplam uçuş saati maliyetinin toplanmasıyla elde edilen operasyonun toplam finansal maliyetidir.</span></span></span>
+                    <span class="metric-value cost" id="toplamMaliyetValue">$0</span>
+                    <hr>
+
+                    <span class="metric-label">Optimizasyon Sonrası Kazanç (Maliyet)<span class="info-icon">❓<span class="tooltip-text">Rota optimizasyonu sayesinde kazanılan sürenin, helikopterin saatlik uçuş maliyetine göre ne kadarlık bir finansal tasarruf sağladığını gösterir.</span></span></span>
+                    <span class="metric-value cost" id="optimizasyonMaliyetKazanci">$0</span>
+                    <hr>
+
+                    <span class="metric-label">Tespit Başına Ortalama Maliyet<span class="info-icon">❓<span class="tooltip-text">Toplam operasyon maliyetinin, simülasyon boyunca gerçekleşen toplam başarılı tespit sayısına bölünmesiyle elde edilen maliyet-etkinlik ölçütüdür.</span></span></span>
+                    <span class="metric-value cost" id="tespitBasinaMaliyet">$0</span>
+                </div>
+
+            </div>
+            <div class="export-results-section">
+                <button id="exportCsvBtn" disabled>Sonuçları İndir (CSV)</button>
+                <button id="exportPdfBtn" disabled>Rapor Oluştur (PDF)</button>
+            </div>
+        </div>
+
+        <div class="sonobuoy-placement">
+            <h2>Sonobuoy Konumları ve Atış Sırası<span class="info-icon">❓<span class="tooltip-text">Simülasyon sonucunda helikopterin sonobuoy'ları bıraktığı X-Y koordinatları ve bu bırakma işlemini yaptığı zamanı (operasyon başlangıcına göre dakika cinsinden) gösterir. 'Rota Optimizasyonu' etkinse bu sıra, en kısa uçuş yolunu sağlayacak şekilde düzenlenir.</span></span></h2>
+            <p id="sonobuoyPlacementNote" style="font-size: 0.9em; color: #facc15; margin-top: -10px; margin-bottom:10px; display: none;"></p>
+            <p id="driftNote" style="font-size: 0.9em; color: #555555; margin-top: -10px; margin-bottom:10px; display: none;"><em><span class="drift-note-prefix">Not:</span> Akıntı aktifse, sonobuoy'lar bırakıldıktan sonra zamanla sürüklenecektir. Listelenen konumlar ilk bırakılma noktalarıdır. Saha dışına sürüklenen sonobuoy'lar etkisizleşir.</em></p>
+            <ol id="sonobuoyYerlesimListesi">
+            </ol>
+        </div>
+
+        <div class="visualization">
+            <h2>Görselleştirme<span class="info-icon">❓<span class="tooltip-text">Simülasyonun 2D veya 3D animasyonudur. Denizaltıların örnek yollarını, sonobuoy'ların konumlarını ve algılama menzillerini, helikopterin rotasını ve başarılı tespit anlarını zaman içinde gösterir. Animasyonu oynatabilir ve zaman çubuğu ile ilerletebilirsiniz.</span></span></h2>
+            <div id="graph" class="graph-container">
+            </div>
+        </div>
+
+        <div class="sensitivity-analysis-section parameters" style="margin-top: 30px;">
+            <h2>Duyarlılık Analizi<span class="info-icon">❓<span class="tooltip-text">Seçilen bir girdinin (parametre) değerini belirli bir aralıkta sistematik olarak değiştirerek, bunun temel çıktılar (tespit olasılığı, maliyet vb.) üzerindeki etkisini analiz eder ve bir grafik olarak gösterir. Bu, hangi parametrelerin sonuçlar üzerinde en etkili olduğunu anlamak için güçlü bir araçtır.</span></span></h2>
+            <div class="param-grid">
+                <div>
+                    <label for="saEnableAnalysis" style="flex-direction: row; align-items: center;">
+                        Duyarlılık Analizini Etkinleştir:
+                        <input type="checkbox" id="saEnableAnalysis" style="margin-left: 10px;">
+                    </label>
+                </div>
+            </div>
+            <div id="saControls" style="display:none; margin-top:15px;">
+                <div class="param-grid">
+                    <div>
+                        <label for="saParameter">Analiz Edilecek Parametre:</label>
+                        <select id="saParameter"></select>
+                    </div>
+                    <div>
+                        <label for="saOutputMetric">İncelenecek Birincil Çıktı:</label>
+                        <select id="saOutputMetric">
+                            <option value="tespitOlasiligiYuzde" selected>Tespit Olasılığı (%)</option>
+                            <option value="helikopterOperasyonSuresiDk">Helikopter Operasyon Süresi (dk)</option>
+                            <option value="toplamMaliyet">Toplam Operasyon Maliyeti ($)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="saOutputMetricSecondary">İncelenecek İkincil Çıktı (Ops.):</label>
+                        <select id="saOutputMetricSecondary">
+                            <option value="none" selected>Yok</option>
+                            <option value="tespitOlasiligiYuzde">Tespit Olasılığı (%)</option>
+                            <option value="helikopterOperasyonSuresiDk">Helikopter Operasyon Süresi (dk)</option>
+                            <option value="toplamMaliyet">Toplam Operasyon Maliyeti ($)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="saStartValue">Başlangıç Değeri:</label>
+                        <input type="number" id="saStartValue" step="any">
+                    </div>
+                    <div>
+                        <label for="saEndValue">Bitiş Değeri:</label>
+                        <input type="number" id="saEndValue" step="any">
+                    </div>
+                    <div>
+                        <label for="saNumSteps">Adım Sayısı (2-20):</label>
+                        <input type="number" id="saNumSteps" min="2" max="20" value="5">
+                    </div>
+                </div>
+                <button id="saRunButton" style="margin-top: 20px;">Analizi Başlat ve Grafiği Çiz</button>
+                <p id="saStatus" style="text-align:center; margin-top:10px; font-style: italic;"></p>
+            </div>
+            <div id="sensitivityGraph" class="graph-container" style="margin-top:20px; display:none;">
+            </div>
+        </div>
+    </div>
+    
+    <div id="methodologyModal" class="methodology-modal" style="display: none;">
+    <div class="modal-content">
+        <span class="modal-close-btn">&times;</span>
+        <h2>Simülasyon Metodolojisi</h2>
+
+        <div class="modal-section">
+            <h3>1. Giriş ve Simülasyonun Amacı</h3>
+            <p>Bu simülasyon, Denizaltı Savunma Harbi (DSH) operasyonlarının planlanması ve analizi için geliştirilmiş bir <strong>stokastik karar destek sistemi</strong> olarak tasarlanmıştır. DSH operasyonları; hedef konumu, hareket profili ve çevresel şartlar gibi yüksek derecede belirsizlik içeren karmaşık sistemlerdir. Bu aracın temel amacı, farklı operasyonel taktiklerin (örn: sonobuoy yerleşim stratejileri) ve kaynak atamalarının (örn: sonobuoy adedi, helikopter sorti sayısı), temel performans göstergeleri üzerindeki etkilerini nicel olarak değerlendirmektir. Bu göstergeler, hedefin tespit olasılığı (P&#x209A;) ve toplam operasyon maliyeti (C<sub>total</sub>) arasındaki ödünleşimi (trade-off) analiz ederek en etkin harekat tarzının (Course of Action - COA) belirlenmesine yardımcı olmayı hedefler.</p>
+        </div>
+
+        <div class="modal-section">
+            <h3>2. Monte Carlo Simülasyon Yaklaşımı</h3>
+            <p>Simülasyon, problemin özündeki olasılıksal yapı nedeniyle <strong>Monte Carlo</strong> yöntemini temel alır. Bu yöntem, analitik olarak çözümü zor veya imkansız olan sistemlerin davranışını, sistemi defalarca rastgele senaryolar üreterek çalıştırmak ve sonuçların istatistiksel dağılımını analiz etmek suretiyle tahmin eder.</p>
+            <ul>
+                <li><strong>Temel Döngü:</strong> Simülasyon, kullanıcı tarafından belirlenen "Monte Carlo Yol Sayısı" (N) kadar tekrarlanır. N değerinin yüksek olması, sonuçların istatistiksel yakınsama ve güvenilirliğini artırır (Büyük Sayılar Yasası).</li>
+                <li><strong>Tekil Deneme (Replication):</strong> Her bir döngü, bağımsız bir simülasyon denemesidir. Bu denemede, başlangıç koşulları ve süreç içi değişkenler (denizaltının başlangıç konumu, rotasındaki ve derinliğindeki anlık sapmalar) olasılık dağılımlarından örneklenerek özgün bir "denizaltı yolu" senaryosu oluşturulur.</li>
+                <li><strong>Sonuçların Toplanması:</strong> Her bir denemenin sonucu ikilidir (binary): "tespit edildi" (1) veya "edilemedi" (0). Toplam tespit olasılığı (p&#x0302;), başarılı deneme sayısının toplam deneme sayısına oranıyla hesaplanır:</li>
+            </ul>
+            <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
+                p&#x0302; = (Tespit Edilen Toplam Yol Sayısı) / (Toplam Deneme Sayısı (N))
+            </p>
+        </div>
+        
+        <div class="modal-section">
+            <h3>3. Varlık ve Çevre Modellemesi</h3>
+            <p>Simülasyon içerisindeki tüm varlıklar ve çevresel faktörler, matematiksel ve algoritmik olarak aşağıdaki gibi modellenmiştir:</p>
+            <ul>
+                <li><strong>Denizaltı Hareketi:</strong> Denizaltının rotası, ayrık zaman adımlarından oluşan bir <strong>stokastik süreç (rastgele yürüyüş)</strong> ile modellenir. Bu süreç, iki ana bileşenden oluşur:
+                    <ol>
+                        <li><strong>Ana Rota:</strong> Denizaltı, varsayılan olarak pozitif X ekseni boyunca ilerler.</li>
+                        <li><strong>Rastgele Sapmalar:</strong> Rota üzerindeki her bir kontrol noktasında, denizaltının Y (yanal) ve Z (dikey) konumlarına rastgele gürültü eklenir. Bu sapmaların büyüklüğü, <code>Denizaltı Y Rota Sapma Oranı</code> ve <code>Denizaltı Derinlik Sapma</code> parametreleri tarafından belirlenen sınırlar içinde kalır. Bu yaklaşım, denizaltının öngörülemez küçük manevralarını ve derinlik değişimlerini taklit eder.</li>
+                    </ol>
+                </li>
+                <li><strong>Datum Bilgisi ve Hedef Belirsizliği:</strong> "Datum", hedefin bilinen son istihbarat konumudur. Simülasyon, hedefin tam olarak datum noktasında olmadığını, bu noktanın etrafındaki bir <strong>belirsizlik alanı (Area of Uncertainty - AOU)</strong> içinde bulunduğunu varsayar. Denizaltının başlangıç konumu, datum noktasını merkez alan ve yarıçapı, <code>Sonar Yarıçapı</code> (R<sub>sonar</sub>) parametresinin dört katına kadar olabilen dairesel bir alan içerisinden <strong>üniform dağılıma</strong> göre rastgele seçilir. Bu, hedef konumundaki istihbarat belirsizliğini gerçekçi bir şekilde modeller.</li>
+                <li><strong>Sonobuoy Yerleşim Paternleri:</strong> Farklı taktiksel senaryolar için önceden tanımlanmış geometrik yerleşim desenleri sunulur: Izgara (Serpantin), Dikey Bariyer, Rastgele ve Dairesel.</li>
+                <li><strong>Helikopter Rota Optimizasyonu:</strong> "Rota Optimizasyonu" etkinleştirildiğinde, helikopterin sonobuoy bırakma sırası, <strong>Gezgin Satıcı Problemi'nin (Traveling Salesman Problem - TSP)</strong> bir çeşidi olarak ele alınır. Bu NP-zor problemin çözümü için, pratikte iyi ve hızlı sonuçlar üreten bir <strong>açgözlü algoritma (greedy algorithm)</strong> olan <strong>En Yakın Komşu (Nearest Neighbour) Sezgiseli</strong> kullanılır. Algoritma her adımda, helikopterin mevcut konumundan kendisine en yakın olan ve henüz bırakılmamış sonobuoy hedefini belirleyerek o noktaya hareket etmesini sağlar.</li>
+                <li><strong>Çevresel Faktörler:</strong> Su akıntısı, sabit bir sürat (<code>Akıntı Sürati</code>) ve yöne (<code>Akıntı Yönü</code>) sahip bir <strong>vektör</strong> olarak modellenir. Suya bırakılan her sonobuoy, bırakıldığı andan itibaren bu akıntı vektörünün etkisiyle zamanla doğrusal olarak sürüklenir. Saha dışına sürüklenen sonobuoy'lar etkisiz kabul edilir.</li>
+            </ul>
+        </div>
+
+        <div class="modal-section">
+            <h3>4. Tespit Mantığı ve Olasılık Hesabı</h3>
+            <p>Bir tespit olayının gerçekleşmesi için iki koşulun <strong>ardışık olarak</strong> sağlanması gerekir:</p>
+            <ol>
+                <li><strong>3 Boyutlu Geometrik Koşul:</strong> Denizaltının, bir sonobuoy'un etrafındaki küresel algılama hacmine girmesi gerekir. Bu yaklaşım, literatürde <strong>"Cookie-Cutter" Sonar Modeli</strong> olarak bilinen bir basitleştirmedir. Denizaltı (<sub>sub</sub>) ile sonobuoy (<sub>buoy</sub>) arasındaki anlık 3 boyutlu Öklid mesafesi (d) şu denklemle hesaplanır:
+                    <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
+                        d = &radic;[(x<sub>sub</sub> - x<sub>buoy</sub>)<sup>2</sup> + (y<sub>sub</sub> - y<sub>buoy</sub>)<sup>2</sup> + (z<sub>sub</sub> - z<sub>buoy</sub>)<sup>2</sup>]
+                    </p>
+                    Eğer d &le; R<sub>sonar</sub> (Sonar Yarıçapı) ise geometrik koşul sağlanmış olur.
+                </li>
+                <li><strong>Olasılıksal Tespit Koşulu:</strong> Geometrik koşul sağlansa bile tespit garanti değildir. <code>Sonar Tespit Başarı Oranı</code> (P<sub>detect</sub>), bu noktada bir tespitin gerçekleşme olasılığını temsil eder. Bu parametre; suyun katmanlı yapısı, denizaltının gürültü seviyesi gibi birçok karmaşık faktörün bir <strong>soyutlamasıdır</strong>. Simülasyon, bu koşulu bir <strong>Bernoulli Deneyi</strong> olarak modeller: 0 ile 1 arasında düzgün dağılımdan rastgele bir sayı (U(0,1)) üretilir. Eğer bu sayı < P<sub>detect</sub> ise, tespit başarılı kabul edilir.
+                </li>
+                <li><strong>Sabit (Statik) Hedef Tespiti:</strong> Denizaltı hızı '0' olarak ayarlandığında, simülasyonun zaman akışı değişir. Hareketli hedefin aksine, burada zaman her bir sonobuoy'un aktif ömrüne göre akar. Simülasyon, her bir sonobuoy'un aktif olduğu süre boyunca belirli zaman aralıklarında tekrar tekrar tespit denemesi yaparak, sabit bir hedefin zaman içinde tespit edilme olasılığını doğru bir şekilde modeller.</li>
+            </ol>
+        </div>
+        
+        <div class="modal-section">
+            <h3>5. Performans ve Maliyet Metrikleri</h3>
+            <p>Simülasyon, operasyonel başarıyı ve ekonomik verimliliği ölçmek için çeşitli metrikler üretir:</p>
+            <ul>
+                <li><strong>Genel Tespit Olasılığı (p&#x0302;):</strong> Monte Carlo simülasyonu sonucunda bulunan tahmini tespit olasılığıdır.
+                    <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
+                        p&#x0302; = (Tespit Edilen Yol Sayısı) / (Toplam Yol Sayısı N)
+                    </p>
+                </li>
+                <li><strong>%95 Güven Aralığı:</strong> Simülasyonla bulunan tahminin (p&#x0302;), gerçek tespit olasılığını hangi hassasiyetle temsil ettiğini gösterir. Standart Normal Dağılım yaklaşımı ile şu formülle hesaplanır:
+                    <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
+                        Güven Aralığı = p&#x0302; &plusmn; 1.96 &times; &radic;[ (p&#x0302;(1-p&#x0302;)) / N ]
+                    </p>
+                </li>
+                <li><strong>Maliyet Analizi:</strong> Toplam operasyon maliyeti (C<sub>total</sub>), iki ana bileşenden oluşur:
+                     <ul>
+                        <li><strong>Uçuş Maliyeti (C<sub>flight</sub>):</strong> C<sub>flight</sub> = (Toplam Uçuş Süresi (saat)) &times; (Birim Uçuş Saati Maliyeti)</li>
+                        <li><strong>Malzeme Maliyeti (C<sub>material</sub>):</strong> C<sub>material</sub> = (Kullanılan Sonobuoy Adedi) &times; (Sonobuoy Başına Maliyet)</li>
+                        <li>Ayrıca, stratejinin maliyet-etkinliğini gösteren <strong>"Tespit Başına Ortalama Maliyet"</strong> metriği de sunulur.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="modal-section">
+            <h3>6. Analiz, Raporlama ve Senaryo Yönetimi Araçları</h3>
+             <p>Bu simülasyon, sadece bir hesaplama motoru değil, aynı zamanda sonuçların yorumlanması ve yönetilmesi için güçlü araçlar sunar:</p>
+             <ul>
+                <li><strong>Duyarlılık Analizi:</strong> Bu özellik, bir "Eğer... ise... (What-If)" analizi aracıdır. Seçilen bir girdi parametresinin sistematik olarak değiştirilmesinin, temel çıktılar üzerindeki etkisini bir grafikle sunarak operasyonel planın en "hassas" ve kritik parametrelerini belirlemeye yardımcı olur.</li>
+                <li><strong>Dinamik Görselleştirme:</strong> 2D ve 3D animasyonlar, operasyonun zamansal ve mekansal dinamiklerini interaktif olarak gözlemleme imkanı sunarak "nasıl" ve "nerede" tespitlerin gerçekleştiğini anlamaya yardımcı olur.</li>
+                <li><strong>Kapsamlı Raporlama:</strong> Tüm parametreleri, istatistikleri ve analitik grafikleri içeren detaylı bir rapor, bulguların sunumu ve dokümantasyonu için <strong>PDF formatında</strong> dışa aktarılabilir.</li>
+                <li><strong>Senaryo Yönetimi:</strong> Tüm parametre setinin bir <strong>JSON dosyası</strong> olarak kaydedilmesi ve geri yüklenmesi, karmaşık senaryoları arşivlemek, farklı kullanıcılar arasında paylaşmak ve deneylerin <strong>tekrarlanabilirliğini</strong> sağlamak için kritik bir özelliktir.</li>
+             </ul>
+        </div>
+
+        <div class="modal-section">
+            <h3>7. Simülasyon Varsayımları ve Kısıtları</h3>
+            <p>Bu modelin sonuçları, aşağıdaki temel varsayımlar ve basitleştirmeler çerçevesinde yorumlanmalıdır:</p>
+            <ul>
+                <li><strong>Sabit Hızlar:</strong> Tüm varlıkların (denizaltı, helikopter) hızları operasyon boyunca sabit kabul edilir. Hızlanma, yavaşlama veya ani manevralar modellenmemiştir.</li>
+                <li><strong>"Cookie-Cutter" Sonar Modeli:</strong> Tespit olasılığı, sonar menzili içinde her noktada aynıdır ve menzil dışında sıfırdır. Gerçekte olasılık, mesafe ve diğer faktörlere bağlı olarak kademeli olarak azalır.</li>
+                <li><strong>Ayrık Zaman ve Uzay:</strong> Varlıkların rotaları, sürekli bir yol yerine ayrık kontrol noktalarından oluşan çizgilerle temsil edilir. Tespit kontrolleri sadece bu noktalarda yapılır.</li>
+                <li><strong>Sabit Çevresel Koşullar:</strong> Akıntı hızı ve yönü gibi çevresel faktörlerin operasyon boyunca değişmediği varsayılır.</li>
+                <li><strong>Mükemmel İletişim ve Anlık Bilgi:</strong> Simülasyon, bir sonobuoy'un tespit yaptığı anda bu bilginin operasyon merkezi tarafından anında öğrenildiğini varsayar. Gerçek dünyadaki iletişim gecikmeleri veya veri kaybı modellenmemiştir.</li>
+                <li><strong>Operasyonel Risklerin Göz Ardı Edilmesi:</strong> Model, helikopter veya sonobuoy arızaları, düşman karşı tedbirleri (örn: jammer, decoy) veya operasyonu etkileyebilecek diğer beklenmedik olaylar gibi risk faktörlerini içermez.</li>
+                <li><strong>İdeal Varlık Davranışları:</strong> Denizaltının, bir tespit olasılığı veya aktif bir sonobuoy varlığını hissettiğinde taktiksel kaçınma manevraları yapmadığı varsayılır.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/simulation_helpers.js"></script>
+    
+    <script src="js/simulation_engine.js"></script>
+    <script src="js/simulation_core.js"></script>
+    
+    <script src="js/sensitivity_analysis.js"></script>
+
+    <script src="js/visualize_2d.js"></script>
+    <script src="js/visualize_3d.js"></script>
+    <script src="js/visualization.js"></script>
+    
+    <script src="js/ui_input_handler.js"></script>
+    <script src="js/ui_simulation_runner.js"></script>
+    <script src="js/ui_sensitivity_analysis.js"></script>
+    <script src="js/ui_controller.js"></script>
+    </body>
+</html>
