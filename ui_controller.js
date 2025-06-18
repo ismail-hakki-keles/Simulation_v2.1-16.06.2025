@@ -169,26 +169,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- BAŞLANGIÇ AYARLARI ---
+    updateComparisonBasketUI();
     clearForm(); 
 });
 
 function updateComparisonBasketUI() {
-    const basketContainer = document.getElementById('comparisonBasketContainer');
     const listElement = document.getElementById('comparisonList');
     const reportButton = document.getElementById('exportComparisonReportBtn');
 
+    // 1. Her durumda listenin içini temizleyerek başla.
+    listElement.innerHTML = '';
+
+    // 2. Sepette senaryo olup olmadığını kontrol et.
     if (comparisonScenarios.length > 0) {
-        basketContainer.style.display = 'block';
-        listElement.innerHTML = '';
+        // 2a. Eğer senaryo VARSA, bunları listeye ekle.
         comparisonScenarios.forEach(scenario => {
             const listItem = document.createElement('li');
             listItem.textContent = scenario.name;
             listElement.appendChild(listItem);
         });
     } else {
-        basketContainer.style.display = 'none';
+        // 2b. Eğer senaryo YOKSA, bilgilendirme mesajı ekle.
+        const emptyMessageItem = document.createElement('li');
+        emptyMessageItem.textContent = 'Henüz karşılaştırılmaya eklenmiş senaryo yok.';
+        // Mesajın farklı görünmesi için stil ekleyelim.
+        emptyMessageItem.style.fontStyle = 'italic';
+        emptyMessageItem.style.color = '#9ca3af';
+        emptyMessageItem.style.borderLeft = 'none';
+        listElement.appendChild(emptyMessageItem);
     }
 
+    // 3. Rapor butonunun durumunu güncelle (bu kısım aynı).
     reportButton.disabled = comparisonScenarios.length < 2;
 }
 
