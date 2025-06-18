@@ -1,8 +1,14 @@
+/*
+ * Denizaltı Tespit Simülasyonu
+ * Copyright (c) 2025 İsmail Hakkı KELEŞ
+ *
+ * Bu proje MIT Lisansı altında lisanslanmıştır.
+ * Lisansın tam metni için projenin kök dizinindeki LICENSE dosyasına bakın.
+ * GitHub: https://github.com/knnchw/Simulation_v2.1-16.06.2025
+ */
+
 "use strict";
 
-// ===================================================================================
-// Tooltip Metinleri Veri Bankası
-// ===================================================================================
 const metricTooltips = {
     'Tespit Olasılığı': 'Monte Carlo simülasyonu sonucunda, rastgele bir denizaltı yolunun oluşturulan sonobuoy bariyeri tarafından tespit edilme istatistiksel olasılığıdır.',
     'Güven Aralığı (%95)': 'Hesaplanan tespit olasılığının, %95 ihtimalle içinde bulunduğu aralığı ifade eder. Dar bir aralık, sonucun daha kararlı olduğunu gösterir.',
@@ -36,37 +42,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-        const reportData = JSON.parse(reportDataJSON);
-        const params = reportData.params;
-        const results = reportData.results;
+        const reportPackage = JSON.parse(reportDataJSON);
 
-        // --- İçerik Oluşturma Modüllerini Çağır ---
-        renderExecutiveSummary(params, results);
-        renderSummaryAndStats(results);
-        renderParametersTable(params, results);
-        renderCostBreakdown(params, results);
-        renderGeometryMetrics(results);
-        
-        // --- Görselleştirme Modüllerini Çağır ---
-        plotHeloTimePieChart(results);
-        plotDetectionHeatmap(params, results);
-        plotBuoyEffectiveness(results);
-        plotDetectionTimes(results, params);
-        
-        // YENİ EKLENEN GRAFİK ÇAĞRILARI
-        plotRouteComparison(results, params);
-        plotDetectionDepthHistogram(results);
+        if (reportPackage.type === 'comparison' && reportPackage.data.length > 0) {
+            // --- KARŞILAŞTIRMA RAPORU OLUŞTURMA ---
+            document.body.classList.add('comparison-mode');
+            document.getElementById('report-title').textContent = "Senaryo Karşılaştırma Raporu";
+            const scenarios = reportPackage.data;
+            
+            renderComparisonExecutiveSummary(scenarios);
+            renderComparisonSummaryAndStats(scenarios);
+            renderComparisonParametersTable(scenarios);
+            
+            const visualsSection = document.getElementById('visuals-section');
+            if(visualsSection) visualsSection.style.display = 'none';
 
+        } else if (reportPackage.type === 'single') {
+            // --- TEKLİ RAPOR OLUŞTURMA ---
+            document.body.classList.remove('comparison-mode');
+            document.getElementById('report-title').textContent = "Simülasyon Sonuç Raporu";
+            const singleScenario = reportPackage.data;
+            const params = singleScenario.params;
+            const results = singleScenario.results;
+            
+            const visualsSection = document.getElementById('visuals-section');
+            if(visualsSection) visualsSection.style.display = 'block';
+
+            renderSingleExecutiveSummary(params, results);
+            renderSingleSummaryAndStats(results);
+            renderSingleParametersTable(params, results);
+            renderSingleCostBreakdown(params, results);
+            renderSingleGeometryMetrics(results);
+            
+            plotHeloTimePieChart(results);
+            plotDetectionHeatmap(params, results);
+            plotBuoyEffectiveness(results);
+            plotDetectionTimes(results, params);
+            plotRouteComparison(results, params);
+            plotDetectionDepthHistogram(results);
+        } else {
+             throw new Error("Rapor verisi formatı anlaşılamadı veya veri boş.");
+        }
 
     } catch (error) {
         console.error("Rapor verisi işlenirken hata oluştu:", error);
-        reportContent.innerHTML = '<h2>Rapor Oluşturulurken Bir Hata Oluştu</h2><p>Lütfen konsol kayıtlarını kontrol edin.</p>';
+        reportContent.innerHTML = `<h2>Rapor Oluşturulurken Bir Hata Oluştu</h2><p>${error.message}. Lütfen konsol kayıtlarını kontrol edin.</p>`;
     }
 
     if (pdfButton) {
         pdfButton.addEventListener('click', generatePdf);
     }
 });
+
 
 function generatePdf() {
     const pdfButton = document.getElementById('createPdfBtn');
@@ -79,8 +106,7 @@ function generatePdf() {
     html2canvas(reportContent, {
         scale: 2, 
         useCORS: true,
-        backgroundColor: '#111827', // Arkaplan rengini tema ile eşleştir
-        // Sayfanın tamamını yakalamak için gerekli ayarlar
+        backgroundColor: '#111827',
         windowHeight: reportContent.scrollHeight,
         scrollY: -window.scrollY
     }).then(canvas => {
@@ -109,7 +135,8 @@ function generatePdf() {
           heightLeft -= pageHeight;
         }
 
-        pdf.save('simulasyon-raporu.pdf');
+        const reportType = document.body.classList.contains('comparison-mode') ? 'karsilastirma' : 'tekli';
+        pdf.save(`simulasyon-raporu-${reportType}.pdf`);
         
         pdfButton.textContent = 'Bu Raporu PDF Olarak İndir';
         pdfButton.disabled = false;
