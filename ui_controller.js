@@ -1,5 +1,22 @@
+/*
+ * Denizaltı Tespit Simülasyonu
+ * Copyright (c) 2025 İsmail Hakkı KELEŞ
+ *
+ * Bu proje MIT Lisansı altında lisanslanmıştır.
+ * Lisansın tam metni için projenin kök dizinindeki LICENSE dosyasına bakın.
+ * GitHub: https://github.com/knnchw/Simulation_v2.1-16.06.2025
+ */
+
 // --- KULLANICI ARABİRİMİ: ANA KONTROLCÜ VE BAŞLATICILAR ---
 "use strict";
+
+// --- MERKEZİ KONTROL DEĞİŞKENLERİ ---
+let comparisonScenarios = [];
+let isSimulationRunning = false;
+let isSensitivityAnalysisRunning = false;
+let isEfficiencyAnalysisRunning = false;
+let isOptimizationRunning = false;
+
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -92,38 +109,259 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // --- SİMÜLASYON VE DUYARLILIK ANALİZİ BAŞLATICILARI ---
+    // --- SİMÜLASYON VE ANALİZ BAŞLATICILARI ---
     setupSimulationRunner();
     setupSensitivityAnalysis();
+    setupEfficiencyAnalysis();
+    setupOptimization();
 
-    // --- SONUÇ DIŞA AKTARMA ---
-    document.getElementById('exportCsvBtn').addEventListener('click', () => {
-        if(!lastSimulationResults || !lastSimulationParams){ return; }
-        let csvContent = "data:text/csv;charset=utf-8,Metrik,Deger\r\n";
-        csvContent += `Tespit Olasiligi (%),${lastSimulationResults.tespitOlasiligiYuzde}\r\n`;
-        // ... diğer metrikler eklenebilir
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "simulasyon_sonuclari.csv");
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-    });
-
+    // --- SONUÇ VE KARŞILAŞTIRMA YÖNETİMİ ---
     document.getElementById('exportPdfBtn').addEventListener('click', () => {
         if (!lastSimulationResults || !lastSimulationParams) {
             showUserMessage('Rapor için önce simülasyon çalıştırılmalı.', 'error');
             return;
         }
-        const leanResults = JSON.parse(JSON.stringify(lastSimulationResults));
-        if(leanResults.denizaltiYollariVeTespitDurumu) {
-            leanResults.denizaltiYollariVeTespitDurumu.forEach(yol => { if (yol) yol[0] = []; });
+        const reportData = {
+            type: 'single',
+            data: {
+                params: lastSimulationParams,
+                results: cleanResultsForReport(lastSimulationResults)
+            }
+        };
+        sessionStorage.setItem('simulationReportData', JSON.stringify(reportData));
+        window.open('report.html', '_blank');
+    });
+
+    document.getElementById('addToComparisonBtn').addEventListener('click', () => {
+        if (!lastSimulationResults || !lastSimulationParams) {
+            showUserMessage('Karşılaştırmaya eklemek için geçerli bir sonuç bulunamadı.', 'error');
+            return;
         }
-        sessionStorage.setItem('simulationReportData', JSON.stringify({params: lastSimulationParams, results: leanResults}));
+        const scenarioName = `Senaryo ${comparisonScenarios.length + 1} (P(d): %${lastSimulationResults.tespitOlasiligiYuzde.toFixed(1)}, Maliyet: $${Math.round(lastSimulationResults.toplamMaliyet/1000)}k)`;
+        
+        comparisonScenarios.push({
+            name: scenarioName,
+            params: lastSimulationParams,
+            results: cleanResultsForReport(lastSimulationResults)
+        });
+        
+        updateComparisonBasketUI();
+        showUserMessage(`"${scenarioName}" karşılaştırma sepetine eklendi.`, 'info');
+    });
+
+    document.getElementById('clearComparisonBtn').addEventListener('click', () => {
+        comparisonScenarios = [];
+        updateComparisonBasketUI();
+        showUserMessage('Karşılaştırma sepeti temizlendi.', 'info');
+    });
+
+    document.getElementById('exportComparisonReportBtn').addEventListener('click', () => {
+        if (comparisonScenarios.length < 2) {
+            showUserMessage('Karşılaştırma raporu için en az 2 senaryo eklemelisiniz.', 'error');
+            return;
+        }
+        const reportData = {
+            type: 'comparison',
+            data: comparisonScenarios
+        };
+        sessionStorage.setItem('simulationReportData', JSON.stringify(reportData));
         window.open('report.html', '_blank');
     });
 
     // --- BAŞLANGIÇ AYARLARI ---
     clearForm(); 
 });
+
+function updateComparisonBasketUI() {
+    const basketContainer = document.getElementById('comparisonBasketContainer');
+    const listElement = document.getElementById('comparisonList');
+    const reportButton = document.getElementById('exportComparisonReportBtn');
+
+    if (comparisonScenarios.length > 0) {
+        basketContainer.style.display = 'block';
+        listElement.innerHTML = '';
+        comparisonScenarios.forEach(scenario => {
+            const listItem = document.createElement('li');
+            listItem.textContent = scenario.name;
+            listElement.appendChild(listItem);
+        });
+    } else {
+        basketContainer.style.display = 'none';
+    }
+
+    reportButton.disabled = comparisonScenarios.length < 2;
+}
+
+function cleanResultsForReport(results) {
+    const leanResults = JSON.parse(JSON.stringify(results));
+    
+    // ÖNEMLİ DÜZELTME:
+    // denizaltiYollariVeTespitDurumu dizisini KESİNLİKLE kısaltmıyoruz.
+    // Çünkü tüm grafikler istatistiklerini bu tam dizi üzerinden hesaplıyor.
+    // Sadece rapor sayfasında görselleştirilecek yol sayısını sınırlamak için
+    // yol noktalarını (dizinin içindeki büyük veri) temizliyoruz.
+    if (leanResults.denizaltiYollariVeTespitDurumu) {
+        leanResults.denizaltiYollariVeTespitDurumu.forEach(yol => {
+            if (yol && yol[0]) {
+                yol[0] = []; // Sadece yol noktası verisini sil, ana sonucu koru.
+            }
+        });
+    }
+
+    // Helikopter hareket kaydını sadece gerekli verileri içerecek şekilde küçült
+    if (leanResults.helikopterHareketKaydi) {
+        leanResults.helikopterHareketKaydi = leanResults.helikopterHareketKaydi.map(seg => ({
+            type: seg.type,
+            startTimeDk: seg.startTimeDk,
+            endTimeDk: seg.endTimeDk
+        }));
+    }
+    
+    return leanResults;
+}
+
+function setupEfficiencyAnalysis() {
+    const eaEnableCheckbox = document.getElementById('eaEnableAnalysis');
+    const eaRunButton = document.getElementById('eaRunButton');
+    const allButtons = [document.getElementById('runSimBtn'), document.getElementById('saRunButton'), document.getElementById('optRunButton')];
+
+
+    if (eaEnableCheckbox) {
+        eaEnableCheckbox.addEventListener('change', () => {
+            document.getElementById('eaControls').style.display = eaEnableCheckbox.checked ? 'block' : 'none';
+             if (!eaEnableCheckbox.checked) {
+                document.getElementById('efficiencyFrontierGraph').style.display = 'none';
+            }
+        });
+    }
+
+    if (eaRunButton) {
+        eaRunButton.addEventListener('click', async () => {
+            if (isSimulationRunning || isSensitivityAnalysisRunning || isOptimizationRunning) {
+                showUserMessage("Mevcut bir simülasyon veya analiz çalışıyor.", 'error');
+                return;
+            }
+            
+            const baseParams = validateAndGetParams();
+            if (!baseParams) {
+                showUserMessage('Lütfen ana formdaki parametreleri geçerli değerlerle doldurun.', 'error');
+                return;
+            }
+            
+            const eaParams = {
+                scenarioCount: parseInt(document.getElementById('eaScenarioCount').value),
+                monteCarloRuns: parseInt(document.getElementById('eaMonteCarloRuns').value),
+                sonobuoyCountMin: parseInt(document.getElementById('eaSonobuoyCountMin').value),
+                sonobuoyCountMax: parseInt(document.getElementById('eaSonobuoyCountMax').value),
+                sonarRadiusMin: parseFloat(document.getElementById('eaSonarRadiusMin').value),
+                sonarRadiusMax: parseFloat(document.getElementById('eaSonarRadiusMax').value),
+                detectionProbMin: parseFloat(document.getElementById('eaDetectionProbMin').value),
+                detectionProbMax: parseFloat(document.getElementById('eaDetectionProbMax').value)
+            };
+            
+            isEfficiencyAnalysisRunning = true;
+            eaRunButton.classList.add('loading');
+            allButtons.forEach(btn => { if(btn) btn.disabled = true; });
+            
+            document.getElementById('eaProgressContainer').style.display = 'block';
+            document.getElementById('eaProgressBar').style.width = '0%';
+            document.getElementById('eaProgressText').textContent = '0%';
+            document.getElementById('efficiencyFrontierGraph').innerHTML = '';
+            document.getElementById('efficiencyFrontierGraph').style.display = 'none';
+            
+            try {
+                const results = await runEfficiencyAnalysis(baseParams, eaParams, (progress) => {
+                    document.getElementById('eaProgressBar').style.width = `${progress}%`;
+                    document.getElementById('eaProgressText').textContent = `Senaryolar çalıştırılıyor: ${Math.round(progress)}%`;
+                });
+                plotEfficiencyFrontier(results);
+            } catch (err) {
+                showUserMessage(`Etkinlik analizi sırasında hata: ${err.message}`, 'error');
+            } finally {
+                isEfficiencyAnalysisRunning = false;
+                eaRunButton.classList.remove('loading');
+                allButtons.forEach(btn => { if(btn) btn.disabled = false; });
+                document.getElementById('saRunButton').disabled = !document.getElementById('saEnableAnalysis').checked;
+                document.getElementById('optRunButton').disabled = !document.getElementById('optEnableAnalysis').checked;
+                 setTimeout(() => {
+                    document.getElementById('eaProgressContainer').style.display = 'none';
+                }, 2000);
+            }
+        });
+    }
+}
+
+function setupOptimization() {
+    const optEnableCheckbox = document.getElementById('optEnableAnalysis');
+    const optRunButton = document.getElementById('optRunButton');
+    const allButtons = [document.getElementById('runSimBtn'), document.getElementById('saRunButton'), document.getElementById('eaRunButton')];
+
+    if (optEnableCheckbox) {
+        optEnableCheckbox.addEventListener('change', () => {
+            document.getElementById('optControls').style.display = optEnableCheckbox.checked ? 'block' : 'none';
+        });
+    }
+
+    if (optRunButton) {
+        optRunButton.addEventListener('click', async () => {
+            if (isSimulationRunning || isSensitivityAnalysisRunning || isEfficiencyAnalysisRunning) {
+                showUserMessage("Mevcut bir simülasyon veya analiz çalışıyor.", 'error');
+                return;
+            }
+            
+            const baseParams = validateAndGetParams();
+            if (!baseParams) {
+                showUserMessage('Lütfen ana formdaki parametreleri geçerli değerlerle doldurun.', 'error');
+                return;
+            }
+
+            const optimizerConfig = {
+                populationSize: parseInt(document.getElementById('optPopulationSize').value),
+                generations: parseInt(document.getElementById('optGenerations').value),
+                mutationRate: parseFloat(document.getElementById('optMutationRate').value),
+                maxCost: parseFloat(document.getElementById('optMaxCost').value),
+                searchSpace: {
+                    sonobuoyCount: { min: parseInt(document.getElementById('optSonobuoyCountMin').value), max: parseInt(document.getElementById('optSonobuoyCountMax').value) },
+                    sonarRadius: { min: parseFloat(document.getElementById('optSonarRadiusMin').value), max: parseFloat(document.getElementById('optSonarRadiusMax').value) }
+                }
+            };
+
+            isOptimizationRunning = true;
+            optRunButton.classList.add('loading');
+            allButtons.forEach(btn => { if(btn) btn.disabled = true; });
+            
+            const logElement = document.getElementById('optLog');
+            const resultElement = document.getElementById('optBestResultText');
+            const outputContainer = document.getElementById('optOutputContainer');
+            logElement.innerHTML = 'Optimizasyon başlatılıyor...';
+            resultElement.innerHTML = '';
+            outputContainer.style.display = 'block';
+
+            const progressCallback = (progress) => {
+                logElement.innerHTML += `<p>Nesil ${progress.generation}/${progress.totalGenerations} | En İyi Olasılık: %${progress.bestFitness.toFixed(2)}</p>`;
+                logElement.scrollTop = logElement.scrollHeight;
+            };
+
+            try {
+                const optimizer = new GeneticOptimizer(optimizerConfig, baseParams, progressCallback);
+                const bestSolution = await optimizer.run();
+                
+                resultElement.innerHTML = `<strong>Optimizasyon Tamamlandı!</strong><br>
+                Bulunan en iyi senaryo:<br>
+                - Tespit Olasılığı: <strong>%${bestSolution.results.tespitOlasiligiYuzde.toFixed(2)}</strong><br>
+                - Toplam Maliyet: <strong>$${bestSolution.results.toplamMaliyet.toLocaleString('en-US')}</strong> (Kısıt: $${optimizerConfig.maxCost.toLocaleString('en-US')})<br>
+                - Parametreler: Sonobuoy Adedi = <strong>${bestSolution.params.sonobuoyAdedi}</strong>, Sonar Yarıçapı = <strong>${bestSolution.params.sonarYaricap.toFixed(2)} NM</strong>`;
+                
+            } catch (err) {
+                showUserMessage(`Optimizasyon sırasında hata: ${err.message}`, 'error');
+                resultElement.innerHTML = `Optimizasyon bir hatayla durduruldu: ${err.message}`;
+            } finally {
+                isOptimizationRunning = false;
+                optRunButton.classList.remove('loading');
+                allButtons.forEach(btn => { if(btn) btn.disabled = false; });
+                document.getElementById('saRunButton').disabled = !document.getElementById('saEnableAnalysis').checked;
+                document.getElementById('eaRunButton').disabled = !document.getElementById('eaEnableAnalysis').checked;
+            }
+        });
+    }
+}
