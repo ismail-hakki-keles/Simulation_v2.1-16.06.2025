@@ -51,7 +51,7 @@ body {
 /* Karşılaştırma Modu için Genişletilmiş Konteyner */
 body.comparison-mode .report-container,
 body.comparison-mode .toolbar {
-    max-width: 1600px;
+    max-width: 1100px;
 }
 
 
