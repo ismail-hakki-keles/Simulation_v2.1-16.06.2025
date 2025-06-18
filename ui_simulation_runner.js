@@ -1,9 +1,18 @@
+/*
+ * Denizaltı Tespit Simülasyonu
+ * Copyright (c) 2025 İsmail Hakkı KELEŞ
+ *
+ * Bu proje MIT Lisansı altında lisanslanmıştır.
+ * Lisansın tam metni için projenin kök dizinindeki LICENSE dosyasına bakın.
+ * GitHub: https://github.com/knnchw/Simulation_v2.1-16.06.2025
+ */
+
 // --- KULLANICI ARABİRİMİ: SİMÜLASYON YÜRÜTME VE SONUÇ GÖSTERİMİ ---
 "use strict";
 
 let lastSimulationResults = null;
 let lastSimulationParams = null;
-let isSimulationRunning = false; // Yerel bayrak
+// let isSimulationRunning = false; // BU SATIR KALDIRILDI!
 
 function setupSimulationRunner() {
     const runSimBtn = document.getElementById('runSimBtn');
@@ -13,7 +22,7 @@ function setupSimulationRunner() {
 }
 
 function runSimulation() {
-    if (isSimulationRunning || isSensitivityAnalysisRunning) {
+    if (isSimulationRunning || isSensitivityAnalysisRunning || isEfficiencyAnalysisRunning || isOptimizationRunning) {
         showUserMessage("Mevcut bir simülasyon veya analiz çalışıyor.", 'error');
         return;
     }
@@ -97,6 +106,8 @@ function resetUIForCalculation() {
         runSimBtn.querySelector('.btn-text').textContent = 'Hesaplanıyor...';
     }
     document.getElementById('saRunButton').disabled = true;
+    document.getElementById('eaRunButton').disabled = true;
+    document.getElementById('optRunButton').disabled = true;
     
     document.getElementById('progressContainer').style.display = 'block';
     document.getElementById('progressBar').style.width = '0%';
@@ -120,7 +131,7 @@ function resetUIForCalculation() {
     optMaliyetEl.previousElementSibling.style.display = 'none';
     if(optMaliyetEl.nextElementSibling) optMaliyetEl.nextElementSibling.style.display = 'none';
     
-    document.getElementById('exportCsvBtn').disabled = true;
+    document.getElementById('addToComparisonBtn').disabled = true;
     document.getElementById('exportPdfBtn').disabled = true;
 }
 
@@ -131,8 +142,10 @@ function finalizeUICalculation() {
         runSimBtn.classList.remove('loading');
         runSimBtn.querySelector('.btn-text').textContent = 'Simülasyonu Başlat';
     }
-    const saRunButton = document.getElementById('saRunButton');
-    if (saRunButton) saRunButton.disabled = !document.getElementById('saEnableAnalysis').checked;
+    
+    document.getElementById('saRunButton').disabled = !document.getElementById('saEnableAnalysis').checked;
+    document.getElementById('eaRunButton').disabled = !document.getElementById('eaEnableAnalysis').checked;
+    document.getElementById('optRunButton').disabled = !document.getElementById('optEnableAnalysis').checked;
     
     setTimeout(() => {
         document.getElementById('progressContainer').style.display = 'none';
@@ -161,23 +174,18 @@ function updateUIWithResults(sonuclar, params) {
         document.getElementById('helikopterOperasyonSuresiUnoptimizedInfo').textContent = `(Optimizasyon olmasaydı süre yaklaşık ${sonuclar.helikopterOperasyonSuresiUnoptimizedDk.toFixed(2)} dk olacaktı.)`;
     }
 
-   
-// Optimizasyon Maliyet Kazancı Grubu
-const optMaliyetEl = document.getElementById('optimizasyonMaliyetKazanci');
-const optMaliyetLabelEl = optMaliyetEl.previousElementSibling;
-const hrAfterOptMaliyet = optMaliyetEl.nextElementSibling;
+    const optMaliyetEl = document.getElementById('optimizasyonMaliyetKazanci');
+    const optMaliyetLabelEl = optMaliyetEl.previousElementSibling;
+    const hrAfterOptMaliyet = optMaliyetEl.nextElementSibling;
+    const maliyetDisplayStyle = isOptimizationRelevant ? '' : 'none';
 
-const maliyetDisplayStyle = isOptimizationRelevant ? '' : 'none';
+    optMaliyetEl.style.display = maliyetDisplayStyle;
+    if (optMaliyetLabelEl) optMaliyetLabelEl.style.display = maliyetDisplayStyle;
+    if (hrAfterOptMaliyet && hrAfterOptMaliyet.tagName === 'HR') hrAfterOptMaliyet.style.display = maliyetDisplayStyle;
 
-optMaliyetEl.style.display = maliyetDisplayStyle;
-if (optMaliyetLabelEl) optMaliyetLabelEl.style.display = maliyetDisplayStyle;
-if (hrAfterOptMaliyet && hrAfterOptMaliyet.tagName === 'HR') hrAfterOptMaliyet.style.display = maliyetDisplayStyle;
-
-if(isOptimizationRelevant){
-    optMaliyetEl.textContent = `$${sonuclar.optimizasyonMaliyetKazanci.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
-}
-
-
+    if(isOptimizationRelevant){
+        optMaliyetEl.textContent = `$${sonuclar.optimizasyonMaliyetKazanci.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+    }
 
     const sonobuoyPlacementNoteElement = document.getElementById('sonobuoyPlacementNote');
     sonobuoyPlacementNoteElement.style.display = sonuclar.gridPatternPlacementNote ? 'block' : 'none';
@@ -193,6 +201,6 @@ if(isOptimizationRelevant){
     });
 
     document.getElementById('driftNote').style.display = params.akintiHizi > 0 ? 'block' : 'none';
-    document.getElementById('exportCsvBtn').disabled = false;
+    document.getElementById('addToComparisonBtn').disabled = false;
     document.getElementById('exportPdfBtn').disabled = false;
 }
