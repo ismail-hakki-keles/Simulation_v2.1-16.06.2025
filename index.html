@@ -252,6 +252,15 @@
 
         <div id="simulationErrorArea" class="error-message-general" style="display: none;"></div>
         <div id="userMessagesArea" class="user-message-info" style="display: none;"></div>
+        
+        <div id="comparisonBasketContainer" class="parameters" style="display: none; margin-top: 35px;">
+            <h3>Karşılaştırma Sepeti</h3>
+            <ol id="comparisonList"></ol>
+            <div class="button-group">
+                <button id="exportComparisonReportBtn" disabled>Karşılaştırma Raporu Oluştur</button>
+                <button id="clearComparisonBtn" class="danger">Sepeti Temizle</button>
+            </div>
+        </div>
 
         <div class="results">
             <h2>Simülasyon Sonuçları</h2>
@@ -299,8 +308,8 @@
 
             </div>
             <div class="export-results-section">
-                <button id="exportCsvBtn" disabled>Sonuçları İndir (CSV)</button>
-                <button id="exportPdfBtn" disabled>Rapor Oluştur (PDF)</button>
+                <button id="addToComparisonBtn" disabled>Sonucu Karşılaştırmaya Ekle</button>
+                <button id="exportPdfBtn" disabled>Tekli Rapor Oluştur (PDF)</button>
             </div>
         </div>
 
@@ -370,16 +379,143 @@
             <div id="sensitivityGraph" class="graph-container" style="margin-top:20px; display:none;">
             </div>
         </div>
+        
+        <div id="efficiency-analysis-section" class="parameters" style="margin-top: 30px;">
+            <h2>Maliyet-Etkinlik Sınırı Analizi<span class="info-icon">❓<span class="tooltip-text">Yüzlerce farklı senaryoyu (farklı sonobuoy sayısı, sonar yarıçapı vb.) otomatik olarak çalıştırır ve sonuçları bir grafikte gösterir. Grafikteki 'Etkin Sınır' çizgisi, belirli bir maliyet için elde edilebilecek maksimum tespit olasılığını gösteren en verimli (Pareto-optimal) senaryoları temsil eder.</span></span></h2>
+            <div class="param-grid">
+                 <div>
+                    <label for="eaEnableAnalysis" style="flex-direction: row; align-items: center;">
+                        Etkinlik Sınırı Analizini Etkinleştir:
+                        <input type="checkbox" id="eaEnableAnalysis" style="margin-left: 10px;">
+                    </label>
+                </div>
+            </div>
+            <div id="eaControls" style="display:none; margin-top:15px;">
+                 <div class="param-grid" style="grid-template-columns: 1fr 1fr;">
+                     <div>
+                        <label for="eaScenarioCount">Test Edilecek Senaryo Sayısı:<span class="info-icon">❓<span class="tooltip-text">Analiz için kaç farklı rastgele senaryo oluşturulacağını belirler. Daha yüksek sayı, daha detaylı bir grafik sunar ancak analiz süresini uzatır.</span></span></label>
+                        <input type="number" id="eaScenarioCount" min="50" max="1000" step="50" value="200">
+                    </div>
+                     <div>
+                        <label for="eaMonteCarloRuns">Senaryo Başına Monte Carlo Koşusu:<span class="info-icon">❓<span class="tooltip-text">Etkinlik analizindeki her bir senaryonun tespit olasılığını hesaplamak için kullanılacak deneme sayısıdır. Daha düşük değerler analizi hızlandırır.</span></span></label>
+                        <input type="number" id="eaMonteCarloRuns" min="50" max="500" step="50" value="100">
+                    </div>
+                </div>
+                <h4>Değişken Parametre Aralıkları</h4>
+                 <div class="param-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                     <div>
+                        <label>Sonobuoy Adedi Aralığı:</label>
+                        <div class="range-inputs">
+                           <input type="number" id="eaSonobuoyCountMin" value="5">
+                           <input type="number" id="eaSonobuoyCountMax" value="50">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Sonar Yarıçapı (NM) Aralığı:</label>
+                         <div class="range-inputs">
+                           <input type="number" id="eaSonarRadiusMin" value="1.0" step="0.1">
+                           <input type="number" id="eaSonarRadiusMax" value="5.0" step="0.1">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Tespit Başarı Oranı Aralığı:</label>
+                         <div class="range-inputs">
+                           <input type="number" id="eaDetectionProbMin" value="0.5" step="0.05">
+                           <input type="number" id="eaDetectionProbMax" value="0.95" step="0.05">
+                        </div>
+                    </div>
+                 </div>
+
+                <button id="eaRunButton" style="margin-top: 20px;">Etkinlik Sınırı Analizini Başlat</button>
+                <div id="eaProgressContainer" class="progress-container" style="display: none; margin-top: 15px;">
+                    <div id="eaProgressBar" class="progress-bar"></div>
+                    <span id="eaProgressText" class="progress-text"></span>
+                </div>
+            </div>
+            <div id="efficiencyFrontierGraph" class="graph-container" style="margin-top:20px; display:none;">
+            </div>
+        </div>
+        
+        <div id="optimization-section" class="parameters" style="margin-top: 30px;">
+            <h2>Senaryo Optimizasyonu (Genetik Algoritma)<span class="info-icon">❓<span class="tooltip-text">Bu araç, belirlediğiniz amaç ve kısıtlar doğrultusunda en iyi senaryoyu (parametre setini) bulmak için bir Genetik Algoritma çalıştırır. Parametre aralıklarını tanımlayın ve algoritmanın sizin için en verimli çözümü 'evrimleştirmesini' izleyin.</span></span></h2>
+            <div class="param-grid">
+                 <div>
+                    <label for="optEnableAnalysis" style="flex-direction: row; align-items: center;">
+                        Optimizasyon Modülünü Etkinleştir:
+                        <input type="checkbox" id="optEnableAnalysis" style="margin-left: 10px;">
+                    </label>
+                </div>
+            </div>
+            <div id="optControls" style="display:none; margin-top:15px;">
+                <h4>1. Amaç ve Kısıtlar</h4>
+                <div class="param-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <label for="optObjective">Amaç Fonksiyonu:</label>
+                        <select id="optObjective">
+                            <option value="maximize_detection_prob" selected>Tespit Olasılığını Maksimize Et</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="optMaxCost">Maksimum Toplam Maliyet ($) Kısıtı:</label>
+                        <input type="number" id="optMaxCost" value="300000" step="10000">
+                    </div>
+                </div>
+
+                <h4>2. Arama Uzayı (Optimize Edilecek Parametreler)</h4>
+                <div class="param-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div>
+                       <label>Sonobuoy Adedi Aralığı:</label>
+                       <div class="range-inputs">
+                          <input type="number" id="optSonobuoyCountMin" value="10">
+                          <input type="number" id="optSonobuoyCountMax" value="40">
+                       </div>
+                   </div>
+                   <div>
+                       <label>Sonar Yarıçapı (NM) Aralığı:</label>
+                        <div class="range-inputs">
+                          <input type="number" id="optSonarRadiusMin" value="1.5" step="0.1">
+                          <input type="number" id="optSonarRadiusMax" value="4.0" step="0.1">
+                       </div>
+                   </div>
+                </div>
+
+                <h4>3. Genetik Algoritma Ayarları</h4>
+                <div class="param-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div>
+                        <label>Popülasyon Büyüklüğü:<span class="info-icon">❓<span class="tooltip-text">Her nesildeki potansiyel çözüm (senaryo) sayısı.</span></span></label>
+                        <input type="number" id="optPopulationSize" value="20" min="10" step="2">
+                    </div>
+                    <div>
+                        <label>Nesil Sayısı (Jenerasyon):<span class="info-icon">❓<span class="tooltip-text">Algoritmanın en iyi çözümü bulmak için kaç evrimsel döngüden geçeceği.</span></span></label>
+                        <input type="number" id="optGenerations" value="15" min="5" step="1">
+                    </div>
+                    <div>
+                        <label>Mutasyon Oranı (%):<span class="info-icon">❓<span class="tooltip-text">Yeni nesillerde genetik çeşitliliği korumak için parametrelerin rastgele değiştirilme olasılığı.</span></span></label>
+                        <input type="number" id="optMutationRate" value="10" min="1" max="100" step="1">
+                    </div>
+                </div>
+
+                <button id="optRunButton" style="margin-top: 20px;">Optimizasyonu Başlat</button>
+                
+                <div id="optOutputContainer" style="display:none; margin-top:20px;">
+                    <h4>Optimizasyon Sonucu</h4>
+                    <p id="optBestResultText"></p>
+                    <h4>İlerleme Günlüğü</h4>
+                    <div id="optLog" class="optimization-log"></div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <div id="methodologyModal" class="methodology-modal" style="display: none;">
     <div class="modal-content">
         <span class="modal-close-btn">&times;</span>
-        <h2>Simülasyon Metodolojisi</h2>
+        <h2>Simülasyon Metodolojisi ve Modelleri</h2>
 
         <div class="modal-section">
             <h3>1. Giriş ve Simülasyonun Amacı</h3>
-            <p>Bu simülasyon, Denizaltı Savunma Harbi (DSH) operasyonlarının planlanması ve analizi için geliştirilmiş bir <strong>stokastik karar destek sistemi</strong> olarak tasarlanmıştır. DSH operasyonları; hedef konumu, hareket profili ve çevresel şartlar gibi yüksek derecede belirsizlik içeren karmaşık sistemlerdir. Bu aracın temel amacı, farklı operasyonel taktiklerin (örn: sonobuoy yerleşim stratejileri) ve kaynak atamalarının (örn: sonobuoy adedi, helikopter sorti sayısı), temel performans göstergeleri üzerindeki etkilerini nicel olarak değerlendirmektir. Bu göstergeler, hedefin tespit olasılığı (P&#x209A;) ve toplam operasyon maliyeti (C<sub>total</sub>) arasındaki ödünleşimi (trade-off) analiz ederek en etkin harekat tarzının (Course of Action - COA) belirlenmesine yardımcı olmayı hedefler.</p>
+            <p>Bu simülasyon, Denizaltı Savunma Harbi (DSH) operasyonlarının planlanması ve analizi için geliştirilmiş, web tabanlı bir <strong>stokastik karar destek sistemi</strong> olarak tasarlanmıştır. DSH operasyonları; hedef konumu, hareket profili ve çevresel şartlar gibi yüksek derecede belirsizlik içeren karmaşık sistemlerdir. Bu aracın temel amacı, farklı operasyonel taktiklerin (örn: sonobuoy yerleşim stratejileri) ve kaynak atamalarının (örn: sonobuoy adedi, helikopter sorti sayısı), temel performans göstergeleri üzerindeki etkilerini nicel olarak değerlendirmektir. Bu göstergeler, hedefin Tespit Olasılığı (P&#x209A;) ve Toplam Operasyon Maliyeti (C<sub>total</sub>) arasındaki ödünleşimi (trade-off) analiz ederek en etkin harekat tarzının (Course of Action - COA) belirlenmesine yardımcı olmayı hedefler.</p>
         </div>
 
         <div class="modal-section">
@@ -399,16 +535,16 @@
             <h3>3. Varlık ve Çevre Modellemesi</h3>
             <p>Simülasyon içerisindeki tüm varlıklar ve çevresel faktörler, matematiksel ve algoritmik olarak aşağıdaki gibi modellenmiştir:</p>
             <ul>
-                <li><strong>Denizaltı Hareketi:</strong> Denizaltının rotası, ayrık zaman adımlarından oluşan bir <strong>stokastik süreç (rastgele yürüyüş)</strong> ile modellenir. Bu süreç, iki ana bileşenden oluşur:
+                <li><strong>Denizaltı Hareketi:</strong> Denizaltının rotası, ayrık zaman adımlarından oluşan bir <strong>stokastik süreç (sınırlı rastgele yürüyüş)</strong> ile modellenir. Bu süreç, iki ana bileşenden oluşur:
                     <ol>
                         <li><strong>Ana Rota:</strong> Denizaltı, varsayılan olarak pozitif X ekseni boyunca ilerler.</li>
                         <li><strong>Rastgele Sapmalar:</strong> Rota üzerindeki her bir kontrol noktasında, denizaltının Y (yanal) ve Z (dikey) konumlarına rastgele gürültü eklenir. Bu sapmaların büyüklüğü, <code>Denizaltı Y Rota Sapma Oranı</code> ve <code>Denizaltı Derinlik Sapma</code> parametreleri tarafından belirlenen sınırlar içinde kalır. Bu yaklaşım, denizaltının öngörülemez küçük manevralarını ve derinlik değişimlerini taklit eder.</li>
                     </ol>
                 </li>
                 <li><strong>Datum Bilgisi ve Hedef Belirsizliği:</strong> "Datum", hedefin bilinen son istihbarat konumudur. Simülasyon, hedefin tam olarak datum noktasında olmadığını, bu noktanın etrafındaki bir <strong>belirsizlik alanı (Area of Uncertainty - AOU)</strong> içinde bulunduğunu varsayar. Denizaltının başlangıç konumu, datum noktasını merkez alan ve yarıçapı, <code>Sonar Yarıçapı</code> (R<sub>sonar</sub>) parametresinin dört katına kadar olabilen dairesel bir alan içerisinden <strong>üniform dağılıma</strong> göre rastgele seçilir. Bu, hedef konumundaki istihbarat belirsizliğini gerçekçi bir şekilde modeller.</li>
-                <li><strong>Sonobuoy Yerleşim Paternleri:</strong> Farklı taktiksel senaryolar için önceden tanımlanmış geometrik yerleşim desenleri sunulur: Izgara (Serpantin), Dikey Bariyer, Rastgele ve Dairesel.</li>
-                <li><strong>Helikopter Rota Optimizasyonu:</strong> "Rota Optimizasyonu" etkinleştirildiğinde, helikopterin sonobuoy bırakma sırası, <strong>Gezgin Satıcı Problemi'nin (Traveling Salesman Problem - TSP)</strong> bir çeşidi olarak ele alınır. Bu NP-zor problemin çözümü için, pratikte iyi ve hızlı sonuçlar üreten bir <strong>açgözlü algoritma (greedy algorithm)</strong> olan <strong>En Yakın Komşu (Nearest Neighbour) Sezgiseli</strong> kullanılır. Algoritma her adımda, helikopterin mevcut konumundan kendisine en yakın olan ve henüz bırakılmamış sonobuoy hedefini belirleyerek o noktaya hareket etmesini sağlar.</li>
-                <li><strong>Çevresel Faktörler:</strong> Su akıntısı, sabit bir sürat (<code>Akıntı Sürati</code>) ve yöne (<code>Akıntı Yönü</code>) sahip bir <strong>vektör</strong> olarak modellenir. Suya bırakılan her sonobuoy, bırakıldığı andan itibaren bu akıntı vektörünün etkisiyle zamanla doğrusal olarak sürüklenir. Saha dışına sürüklenen sonobuoy'lar etkisiz kabul edilir.</li>
+                <li><strong>Sonobuoy Yerleşim Paternleri:</strong> Farklı taktiksel senaryolar için önceden tanımlanmış geometrik yerleşim desenleri (`simulation_helpers.js` içinde) sunulur: Izgara (Serpantin), Dikey Bariyer, Rastgele ve Dairesel.</li>
+                <li><strong>Helikopter Rota Optimizasyonu:</strong> "Rota Optimizasyonu" etkinleştirildiğinde, helikopterin sonobuoy bırakma sırası, <strong>Gezgin Satıcı Problemi'nin (Traveling Salesman Problem - TSP)</strong> bir çeşidi olarak ele alınır. Bu NP-zor problemin çözümü için, pratikte iyi ve hızlı sonuçlar üreten bir <strong>açgözlü algoritma (greedy algorithm)</strong> olan <strong>En Yakın Komşu (Nearest Neighbour) Sezgiseli</strong> kullanılır. Algoritma her adımda, helikopterin mevcut konumundan (başlangıçta üs, sonra bir önceki bıraktığı sonobuoy) kendisine en yakın olan ve henüz bırakılmamış sonobuoy hedefini belirleyerek o noktaya hareket etmesini sağlar. Bu işlem, helikopterin taşıma kapasitesi (`helikopterTasiyabilecegiKapasite`) dolana veya bırakılacak sonobuoy kalmayana kadar devam eder, ardından helikopter ikmal için üsse döner.</li>
+                <li><strong>Çevresel Faktörler:</strong> Su akıntısı, sabit bir sürat (`Akıntı Sürati`) ve yöne (`Akıntı Yönü`) sahip bir <strong>vektör</strong> olarak modellenir. Suya bırakılan her sonobuoy, bırakıldığı andan itibaren bu akıntı vektörünün etkisiyle zamanla doğrusal olarak sürüklenir. Saha dışına sürüklenen sonobuoy'lar etkisiz kabul edilir.</li>
             </ul>
         </div>
 
@@ -424,12 +560,22 @@
                 </li>
                 <li><strong>Olasılıksal Tespit Koşulu:</strong> Geometrik koşul sağlansa bile tespit garanti değildir. <code>Sonar Tespit Başarı Oranı</code> (P<sub>detect</sub>), bu noktada bir tespitin gerçekleşme olasılığını temsil eder. Bu parametre; suyun katmanlı yapısı, denizaltının gürültü seviyesi gibi birçok karmaşık faktörün bir <strong>soyutlamasıdır</strong>. Simülasyon, bu koşulu bir <strong>Bernoulli Deneyi</strong> olarak modeller: 0 ile 1 arasında düzgün dağılımdan rastgele bir sayı (U(0,1)) üretilir. Eğer bu sayı < P<sub>detect</sub> ise, tespit başarılı kabul edilir.
                 </li>
-                <li><strong>Sabit (Statik) Hedef Tespiti:</strong> Denizaltı hızı '0' olarak ayarlandığında, simülasyonun zaman akışı değişir. Hareketli hedefin aksine, burada zaman her bir sonobuoy'un aktif ömrüne göre akar. Simülasyon, her bir sonobuoy'un aktif olduğu süre boyunca belirli zaman aralıklarında tekrar tekrar tespit denemesi yaparak, sabit bir hedefin zaman içinde tespit edilme olasılığını doğru bir şekilde modeller.</li>
+                <li><strong>Sabit (Statik) Hedef Tespiti:</strong> Denizaltı hızı '0' olarak ayarlandığında, simülasyonun zaman akışı değişir. Hareketli hedefin aksine, burada zaman her bir sonobuoy'un aktif ömrüne göre akar. Simülasyon, her bir sonobuoy'un aktif olduğu süre boyunca belirli zaman aralıklarında (`STATIC_TARGET_DETECTION_STEPS_PER_BUOY_LIFE` sabiti ile) tekrar tekrar tespit denemesi yaparak, sabit bir hedefin zaman içinde tespit edilme olasılığını doğru bir şekilde modeller.</li>
             </ol>
         </div>
         
         <div class="modal-section">
-            <h3>5. Performans ve Maliyet Metrikleri</h3>
+            <h3>5. Gelişmiş Analiz Araçları</h3>
+            <p>Simülasyon, tekil senaryo analizinin ötesinde, daha derinlemesine stratejik çıkarımlar yapabilmek için üç adet gelişmiş analiz modülü sunar:</p>
+            <ul>
+                <li><strong>Duyarlılık Analizi:</strong> Bu özellik, bir "Eğer... ise... (What-If)" analizi aracıdır. Seçilen bir girdi parametresinin (örn: Sonar Yarıçapı) belirli bir aralıkta sistematik olarak değiştirilmesinin, temel çıktılar (tespit olasılığı, maliyet vb.) üzerindeki etkisini bir grafikle sunar. Bu, operasyonel planın en "hassas" ve kritik parametrelerini belirlemeye yardımcı olur.</li>
+                <li><strong>Maliyet-Etkinlik Sınırı Analizi:</strong> Bu modül, yüzlerce farklı senaryoyu (farklı sonobuoy sayısı, sonar yarıçapı vb. kombinasyonları) otomatik olarak çalıştırır ve sonuçları bir maliyet-performans (cost-benefit) grafiğinde gösterir. Grafikteki **"Etkin Sınır" (Efficient Frontier)** çizgisi, belirli bir maliyet için elde edilebilecek maksimum tespit olasılığını gösteren en verimli (Pareto-optimal) senaryoları temsil eder. Bu, kaynakların en verimli şekilde nasıl tahsis edileceği konusunda güçlü bir içgörü sağlar.</li>
+                <li><strong>Senaryo Optimizasyonu (Genetik Algoritma):</strong> Bu modül, belirlenen bir amaç (örn: tespit olasılığını maksimize et) ve kısıt (örn: maksimum toplam maliyet) doğrultusunda en iyi senaryoyu (parametre setini) bulmak için bir <strong>Genetik Algoritma (GA)</strong> çalıştırır. Algoritma; "popülasyon" adı verilen bir dizi potansiyel çözümü (senaryoyu) "nesiller" boyunca evrimleştirir. Her nesilde, "uygunluk" (fitness) fonksiyonu (amaç ve kısıtlara dayalı bir skor) en yüksek olan bireyler seçilir, parametreleri "çaprazlanır" (crossover) ve genetik çeşitlilik için rastgele "mutasyonlara" uğratılır. Bu süreç, kullanıcının tanımladığı arama uzayı içinde en optimal çözümü bulmayı hedefler.</li>
+            </ul>
+        </div>
+
+        <div class="modal-section">
+            <h3>6. Performans ve Maliyet Metrikleri</h3>
             <p>Simülasyon, operasyonel başarıyı ve ekonomik verimliliği ölçmek için çeşitli metrikler üretir:</p>
             <ul>
                 <li><strong>Genel Tespit Olasılığı (p&#x0302;):</strong> Monte Carlo simülasyonu sonucunda bulunan tahmini tespit olasılığıdır.
@@ -451,20 +597,29 @@
                 </li>
             </ul>
         </div>
-        
-        <div class="modal-section">
-            <h3>6. Analiz, Raporlama ve Senaryo Yönetimi Araçları</h3>
-             <p>Bu simülasyon, sadece bir hesaplama motoru değil, aynı zamanda sonuçların yorumlanması ve yönetilmesi için güçlü araçlar sunar:</p>
-             <ul>
-                <li><strong>Duyarlılık Analizi:</strong> Bu özellik, bir "Eğer... ise... (What-If)" analizi aracıdır. Seçilen bir girdi parametresinin sistematik olarak değiştirilmesinin, temel çıktılar üzerindeki etkisini bir grafikle sunarak operasyonel planın en "hassas" ve kritik parametrelerini belirlemeye yardımcı olur.</li>
-                <li><strong>Dinamik Görselleştirme:</strong> 2D ve 3D animasyonlar, operasyonun zamansal ve mekansal dinamiklerini interaktif olarak gözlemleme imkanı sunarak "nasıl" ve "nerede" tespitlerin gerçekleştiğini anlamaya yardımcı olur.</li>
-                <li><strong>Kapsamlı Raporlama:</strong> Tüm parametreleri, istatistikleri ve analitik grafikleri içeren detaylı bir rapor, bulguların sunumu ve dokümantasyonu için <strong>PDF formatında</strong> dışa aktarılabilir.</li>
-                <li><strong>Senaryo Yönetimi:</strong> Tüm parametre setinin bir <strong>JSON dosyası</strong> olarak kaydedilmesi ve geri yüklenmesi, karmaşık senaryoları arşivlemek, farklı kullanıcılar arasında paylaşmak ve deneylerin <strong>tekrarlanabilirliğini</strong> sağlamak için kritik bir özelliktir.</li>
-             </ul>
+
+        <div class="modal-section" id="v-and-v-section">
+            <h3>7. Modelin Doğrulanması ve Geçerlenmesi (Verification & Validation)</h3>
+            <p>Her simülasyon modelinin güvenirliği, doğrulama ve geçerleme süreçlerine dayanır. Bu modelin geliştirilmesinde aşağıdaki V&V prensipleri göz önünde bulundurulmuştur:</p>
+            <ul>
+                <li><strong>Doğrulama (Verification - "Modeli doğru mu kodladık?"):</strong> Bu süreç, simülasyon kodunun, tasarlanan matematiksel ve mantıksal modeli hatasız bir şekilde çalıştırdığını teyit etmeyi amaçlar.
+                    <ul>
+                        <li><strong>Aşırı Durum Testleri:</strong> Model, bilinen sonuçlar üretmesi beklenen ekstrem parametrelerle test edilmiştir. Örneğin, "Sonar Tespit Başarı Oranı" %100 ve denizaltı yolu bilerek bir sonobuoy'un menzilinden geçirildiğinde, tespitin her zaman gerçekleştiği doğrulanmıştır.</li>
+                        <li><strong>Mantıksal Tutarlılık:</strong> "Akıntı Hızı" sıfır girildiğinde, sonobuoy'ların zaman içinde konumlarını değiştirmediği gözlemlenmiştir. "Helikopter Rota Optimizasyonu" etkinleştirildiğinde, basit 3-4 noktalı senaryolarda toplam uçuş süresinin her zaman azaldığı veya eşit kaldığı teyit edilmiştir.</li>
+                        <li><strong>Birim ve Değer Kontrolü:</strong> Tüm hesaplamalarda kullanılan birimlerin (NM, knot, metre, dakika) birbirine doğru bir şekilde dönüştürüldüğü (`METERS_PER_NAUTICAL_MILE` sabiti gibi) ve arayüzden gelen girdilerin mantıksal sınırlar içinde olduğu (`ui_input_handler.js` içindeki validasyon kuralları) kontrol edilmiştir.</li>
+                    </ul>
+                </li>
+                <li><strong>Geçerleme (Validation - "Doğru modeli mi kodladık?"):</strong> Bu süreç, geliştirilen modelin gerçek dünyadaki sistemi veya problemi kabul edilebilir bir doğrulukla temsil edip etmediğini tartışır. Bu simülasyon bir "soyutlama" olduğu için geçerleme, modelin varsayımlarını ve bu varsayımların neden yapıldığını net bir şekilde ortaya koymayı içerir.
+                    <ul>
+                        <li><strong>Bilinçli Tasarım Tercihleri:</strong> Modeldeki en önemli basitleştirme olan **"Cookie-Cutter" Sonar Modeli**, bilinçli bir tasarım tercihidir. Gerçek dünyadaki karmaşık akustik yayılım modelleri (örn: Sonar Denklemi), her bir Monte Carlo denemesi için fahiş hesaplama süreleri gerektirir. Bu model, binlerce senaryonun hızlı bir şekilde analiz edilmesine olanak tanıyarak, taktiksel seviyede (patern seçimi, kaynak ataması) bir "birinci derece yaklaşım" sunmak için yeterli kabul edilmiştir. Amaç, akustik fiziği birebir modellemek değil, farklı stratejilerin göreceli performansını karşılaştırmaktır.</li>
+                        <li><strong>Uzman Görüşü ve Mantıksallık:</strong> Denizaltı hareketinin "rastgele yürüyüş" ile modellenmesi, bir hedefin öngörülemez küçük kaçınma manevralarını temsil eder. Parametrelerin (örn: rota sapma yüzdesi) bir uzman tarafından ayarlanmasıyla model, gerçekçi davranış paternlerine yaklaştırılabilir.</li>
+                    </ul>
+                </li>
+            </ul>
         </div>
 
         <div class="modal-section">
-            <h3>7. Simülasyon Varsayımları ve Kısıtları</h3>
+            <h3>8. Simülasyon Varsayımları ve Kısıtları</h3>
             <p>Bu modelin sonuçları, aşağıdaki temel varsayımlar ve basitleştirmeler çerçevesinde yorumlanmalıdır:</p>
             <ul>
                 <li><strong>Sabit Hızlar:</strong> Tüm varlıkların (denizaltı, helikopter) hızları operasyon boyunca sabit kabul edilir. Hızlanma, yavaşlama veya ani manevralar modellenmemiştir.</li>
@@ -479,25 +634,23 @@
     </div>
 </div>
 
-<footer style="text-align: center; padding: 20px; font-size: 0.85em; color: #9ca3af; margin-top: 20px;">
-    <p>&copy; 2025 İsmail Hakkı KELEŞ. Bu proje <a href="https://github.com/knnchw/Simulation_v2.1-16.06.2025" target="_blank" style="color: #67e8f9;">MIT Lisansı</a> altında yayımlanmıştır.</p>
-</footer>
+    <footer style="text-align: center; padding: 20px; font-size: 0.85em; color: #9ca3af; margin-top: 20px;">
+        <p>&copy; 2025 İsmail Hakkı KELEŞ. Bu proje <a href="https://github.com/knnchw/Simulation_v2.1-16.06.2025" target="_blank" style="color: #67e8f9;">MIT Lisansı</a> altında yayımlanmıştır.</p>
+    </footer>
     
-    <script src="config.js"></script>
-    <script src="simulation_helpers.js"></script>
-    
-    <script src="simulation_engine.js"></script>
-    <script src="simulation_core.js"></script>
-    
-    <script src="sensitivity_analysis.js"></script>
-
-    <script src="visualize_2d.js"></script>
-    <script src="visualize_3d.js"></script>
-    <script src="visualization.js"></script>
-    
-    <script src="ui_input_handler.js"></script>
-    <script src="ui_simulation_runner.js"></script>
-    <script src="ui_sensitivity_analysis.js"></script>
-    <script src="ui_controller.js"></script>
-    </body>
+    <script src="js/config.js"></script>
+    <script src="js/simulation_helpers.js"></script>
+    <script src="js/simulation_engine.js"></script>
+    <script src="js/simulation_core.js"></script>
+    <script src="js/sensitivity_analysis.js"></script>
+    <script src="js/efficiency_analyzer.js"></script>
+    <script src="js/optimization_engine.js"></script>
+    <script src="js/visualize_2d.js"></script>
+    <script src="js/visualize_3d.js"></script>
+    <script src="js/visualization.js"></script>
+    <script src="js/ui_input_handler.js"></script>
+    <script src="js/ui_simulation_runner.js"></script>
+    <script src="js/ui_sensitivity_analysis.js"></script>
+    <script src="js/ui_controller.js"></script>
+</body>
 </html>
