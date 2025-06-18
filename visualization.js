@@ -1,3 +1,12 @@
+/*
+ * Denizaltı Tespit Simülasyonu
+ * Copyright (c) 2025 İsmail Hakkı KELEŞ
+ *
+ * Bu proje MIT Lisansı altında lisanslanmıştır.
+ * Lisansın tam metni için projenin kök dizinindeki LICENSE dosyasına bakın.
+ * GitHub: https://github.com/knnchw/Simulation_v2.1-16.06.2025
+ */
+
 // --- GÖRSELLEŞTİRME: ANA KONTROLCÜ ---
 "use strict";
 
@@ -131,4 +140,61 @@ function plotSensitivityGraph(
         sensitivityGraphDiv.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Duyarlılık grafiği oluşturulurken bir hata oluştu.</p>';
     });
     sensitivityGraphDiv.style.display = 'block';
+}
+
+
+function plotEfficiencyFrontier(analysisResults) {
+    const { allPoints, frontierPoints } = analysisResults;
+    const graphDiv = document.getElementById('efficiencyFrontierGraph');
+    if (!graphDiv) return;
+    graphDiv.innerHTML = '';
+    graphDiv.style.display = 'block';
+
+    const nonFrontierPoints = allPoints.filter(p => !frontierPoints.includes(p));
+
+    const traceAll = {
+        x: nonFrontierPoints.map(p => p.cost),
+        y: nonFrontierPoints.map(p => p.probability),
+        mode: 'markers',
+        type: 'scatter',
+        name: 'Alt-Optimal Senaryolar',
+        marker: {
+            color: 'rgba(107, 114, 128, 0.5)',
+            size: 6
+        },
+        text: nonFrontierPoints.map(p => `Maliyet: $${Math.round(p.cost)}<br>P(d): %${p.probability.toFixed(1)}<br>SB Adet: ${p.params.sonobuoyAdedi}<br>SB Yarıçap: ${p.params.sonarYaricap} NM<br>Tespit Oranı: ${p.params.sonarTespitBasariOrani}`),
+        hoverinfo: 'text'
+    };
+
+    const traceFrontier = {
+        x: frontierPoints.map(p => p.cost),
+        y: frontierPoints.map(p => p.probability),
+        mode: 'lines+markers',
+        type: 'scatter',
+        name: 'Etkin Sınır (Pareto-Optimal)',
+        line: {
+            color: '#67e8f9',
+            width: 3
+        },
+        marker: {
+            color: '#22d3ee',
+            size: 8,
+            symbol: 'star'
+        },
+        text: frontierPoints.map(p => `Maliyet: $${Math.round(p.cost)}<br>P(d): %${p.probability.toFixed(1)}<br>SB Adet: ${p.params.sonobuoyAdedi}<br>SB Yarıçap: ${p.params.sonarYaricap} NM<br>Tespit Oranı: ${p.params.sonarTespitBasariOrani}`),
+        hoverinfo: 'text'
+    };
+
+    const layout = {
+        title: { text: 'Maliyet-Etkinlik Sınırı (Efficient Frontier)', font: { size: 16, color: '#e0f2fe' } },
+        font: { color: '#c0c5ce' },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: { title: 'Toplam Operasyon Maliyeti ($)', gridcolor: 'rgba(255, 255, 255, 0.1)' },
+        yaxis: { title: 'Tespit Olasılığı (%)', gridcolor: 'rgba(255, 255, 255, 0.1)' },
+        legend: { bgcolor: 'rgba(17, 24, 39, 0.7)', bordercolor: 'rgba(56, 189, 248, 0.2)' },
+        hovermode: 'closest'
+    };
+
+    Plotly.newPlot(graphDiv, [traceAll, traceFrontier], layout);
 }
