@@ -1,7 +1,16 @@
+/*
+ * Denizaltı Tespit Simülasyonu
+ * Copyright (c) 2025 İsmail Hakkı KELEŞ
+ *
+ * Bu proje MIT Lisansı altında lisanslanmıştır.
+ * Lisansın tam metni için projenin kök dizinindeki LICENSE dosyasına bakın.
+ * GitHub: https://github.com/knnchw/Simulation_v2.1-16.06.2025
+ */
+
 // --- KULLANICI ARABİRİMİ: DUYARLILIK ANALİZİ KONTROLÜ ---
 "use strict";
 
-let isSensitivityAnalysisRunning = false; // Global bayrak
+// let isSensitivityAnalysisRunning = false; // BU SATIR KALDIRILDI!
 
 function setupSensitivityAnalysis() {
     const saEnableAnalysisCheckbox = document.getElementById('saEnableAnalysis');
@@ -84,7 +93,7 @@ function handleSAParameterChange() {
 }
 
 async function runSensitivityAnalysis() {
-    if (isSensitivityAnalysisRunning || isSimulationRunning) {
+    if (isSimulationRunning || isSensitivityAnalysisRunning || isEfficiencyAnalysisRunning || isOptimizationRunning) {
         showUserMessage("Mevcut bir simülasyon veya analiz çalışıyor.", 'error');
         return;
     }
@@ -97,6 +106,9 @@ async function runSensitivityAnalysis() {
     saStatusElement.textContent = 'Duyarlılık analizi başlatılıyor...';
     saRunButton.classList.add('loading');
     document.getElementById('runSimBtn').disabled = true;
+    document.getElementById('eaRunButton').disabled = true;
+    document.getElementById('optRunButton').disabled = true;
+
     sensitivityGraphDiv.innerHTML = '';
     sensitivityGraphDiv.style.display = 'none';
     
@@ -157,5 +169,7 @@ async function runSensitivityAnalysis() {
         isSensitivityAnalysisRunning = false;
         saRunButton.classList.remove('loading');
         document.getElementById('runSimBtn').disabled = false;
+        document.getElementById('eaRunButton').disabled = !document.getElementById('eaEnableAnalysis').checked;
+        document.getElementById('optRunButton').disabled = !document.getElementById('optEnableAnalysis').checked;
     }
 }
