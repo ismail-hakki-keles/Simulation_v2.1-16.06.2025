@@ -1,3 +1,12 @@
+/*
+ * Denizaltı Tespit Simülasyonu
+ * Copyright (c) 2025 İsmail Hakkı KELEŞ
+ *
+ * Bu proje MIT Lisansı altında lisanslanmıştır.
+ * Lisansın tam metni için projenin kök dizinindeki LICENSE dosyasına bakın.
+ * GitHub: https://github.com/knnchw/Simulation_v2.1-16.06.2025
+ */
+
 // --- RAPOR OLUŞTURUCU: GÖRSEL GRAFİKLER ---
 "use strict";
 
@@ -41,16 +50,18 @@ function plotHeloTimePieChart(results) {
 
     const timeBreakdown = { 'İntikal': 0, 'Bırakma': 0, 'İkmal': 0 };
 
-    results.helikopterHareketKaydi.forEach(seg => {
-        const duration = seg.endTimeDk - seg.startTimeDk;
-        if (seg.type === 'to_drop_point' || seg.type === 'to_base') {
-            timeBreakdown['İntikal'] += duration;
-        } else if (seg.type === 'dropping_sonobuoy') {
-            timeBreakdown['Bırakma'] += duration;
-        } else if (seg.type === 'refueling_at_base') {
-            timeBreakdown['İkmal'] += duration;
-        }
-    });
+    if (results.helikopterHareketKaydi) {
+        results.helikopterHareketKaydi.forEach(seg => {
+            const duration = seg.endTimeDk - seg.startTimeDk;
+            if (seg.type === 'to_drop_point' || seg.type === 'to_base') {
+                timeBreakdown['İntikal'] += duration;
+            } else if (seg.type === 'dropping_sonobuoy') {
+                timeBreakdown['Bırakma'] += duration;
+            } else if (seg.type === 'refueling_at_base') {
+                timeBreakdown['İkmal'] += duration;
+            }
+        });
+    }
 
     const data = [{
         values: Object.values(timeBreakdown),
@@ -81,12 +92,14 @@ function plotDetectionHeatmap(params, results) {
     const detectionX = [];
     const detectionY = [];
 
-    results.denizaltiYollariVeTespitDurumu.forEach(yol => {
-        if (yol[1] && yol[2]) {
-            detectionX.push(yol[2][0]);
-            detectionY.push(yol[2][1]);
-        }
-    });
+    if (results.denizaltiYollariVeTespitDurumu) {
+        results.denizaltiYollariVeTespitDurumu.forEach(yol => {
+            if (yol && yol[1] && yol[2]) { // tespitEdildi ve tespitNoktasi
+                detectionX.push(yol[2][0]);
+                detectionY.push(yol[2][1]);
+            }
+        });
+    }
 
     if (detectionX.length === 0) {
         chartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Hiç tespit gerçekleşmediği için ısı haritası oluşturulamadı.</p>';
@@ -97,7 +110,7 @@ function plotDetectionHeatmap(params, results) {
         x: detectionX,
         y: detectionY,
         type: 'histogram2d',
-        colorscale: 'Cividis', // Koyu tema için daha uygun bir renk skalası
+        colorscale: 'Cividis', 
         reversescale: true
     }];
     
@@ -120,17 +133,20 @@ function getBuoyEffectivenessData(results) {
     }
 
     let totalDetections = 0;
-    results.denizaltiYollariVeTespitDurumu.forEach(yol => {
-        const tespitEdildi = yol[1];
-        const tespitEdenSonobuoyIndeksi = yol[4];
-        if (tespitEdildi && tespitEdenSonobuoyIndeksi !== -1 && tespitEdenSonobuoyIndeksi != null) {
-            const buoyLabel = `Sonobuoy ${tespitEdenSonobuoyIndeksi + 1}`;
-            if (detectionCounts.hasOwnProperty(buoyLabel)) {
-                detectionCounts[buoyLabel]++;
-                totalDetections++;
+    if (results.denizaltiYollariVeTespitDurumu) {
+        results.denizaltiYollariVeTespitDurumu.forEach(yol => {
+            if (!yol) return;
+            const tespitEdildi = yol[1];
+            const tespitEdenSonobuoyIndeksi = yol[4];
+            if (tespitEdildi && tespitEdenSonobuoyIndeksi !== -1 && tespitEdenSonobuoyIndeksi != null) {
+                const buoyLabel = `Sonobuoy ${tespitEdenSonobuoyIndeksi + 1}`;
+                if (detectionCounts.hasOwnProperty(buoyLabel)) {
+                    detectionCounts[buoyLabel]++;
+                    totalDetections++;
+                }
             }
-        }
-    });
+        });
+    }
     
     const sortedBuoys = Object.entries(detectionCounts).sort(([,a],[,b]) => b-a);
 
@@ -143,8 +159,10 @@ function getBuoyEffectivenessData(results) {
 
 function plotBuoyEffectiveness(results) {
     const buoyChartDiv = document.getElementById('buoy-effectiveness-chart');
-    if (!buoyChartDiv || results.fiiliBirakilanSonobuoySayisi === 0) {
-        if(buoyChartDiv) buoyChartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Grafik oluşturulamaz: Hiç sonobuoy bırakılmadı.</p>';
+    if (!buoyChartDiv) return;
+    
+    if (results.fiiliBirakilanSonobuoySayisi === 0) {
+        buoyChartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Grafik oluşturulamaz: Hiç sonobuoy bırakılmadı.</p>';
         return;
     }
 
@@ -167,7 +185,7 @@ function plotBuoyEffectiveness(results) {
         hovertext: hoverTexts,
         type: 'bar',
         marker: {
-            color: 'rgba(56, 189, 248, 0.7)', // --accent-primary
+            color: 'rgba(56, 189, 248, 0.7)',
             line: { color: 'rgba(56, 189, 248, 1.0)', width: 1 }
         }
     };
@@ -185,10 +203,13 @@ function plotBuoyEffectiveness(results) {
 
 function plotDetectionTimes(results, params) {
     const timeChartDiv = document.getElementById('detection-time-chart');
+    if (!timeChartDiv) return;
+    
     const detectionTimes = [];
 
-    if (params.denizaltiSurati > 0) {
+    if (params.denizaltiSurati > 0 && results.denizaltiYollariVeTespitDurumu) {
         results.denizaltiYollariVeTespitDurumu.forEach(yol => {
+            if (!yol) return;
             const tespitEdildi = yol[1];
             const tespitNoktasi = yol[2];
             const mc_baslangicX = yol[3];
@@ -209,7 +230,7 @@ function plotDetectionTimes(results, params) {
         x: detectionTimes,
         type: 'histogram',
         marker: {
-            color: 'rgba(167, 139, 250, 0.7)', // Violet
+            color: 'rgba(167, 139, 250, 0.7)',
             line: { color: 'rgba(139, 92, 246, 1.0)', width: 1 }
         },
         xbins: { size: (Math.max(...detectionTimes) - Math.min(...detectionTimes)) / 15 }
@@ -226,11 +247,12 @@ function plotDetectionTimes(results, params) {
     Plotly.newPlot(timeChartDiv, [trace], layout, {responsive: true});
 }
 
-// YENİ FONKSİYON: Rota Karşılaştırma Grafiği
 function plotRouteComparison(results, params) {
     const chartDiv = document.getElementById('route-comparison-chart');
-    if (!chartDiv || !results.unoptimizedRoute || !results.sonobuoyKonumlariVeSirasi || !results.heloBase) {
-        if(chartDiv) chartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Optimizasyon verisi bulunamadı.</p>';
+    if (!chartDiv) return;
+
+    if (!results.unoptimizedRoute || !results.sonobuoyKonumlariVeSirasi || !results.heloBase) {
+        chartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Optimizasyon verisi bulunamadı.</p>';
         return;
     }
 
@@ -259,7 +281,6 @@ function plotRouteComparison(results, params) {
     Plotly.newPlot(chartDiv, traces, layout, {responsive: true});
 }
 
-// YENİ FONKSİYON: Derinliğe Göre Tespit Dağılımı Grafiği
 function plotDetectionDepthHistogram(results) {
     const chartDiv = document.getElementById('detection-depth-chart');
     if (!chartDiv) return;
@@ -273,7 +294,7 @@ function plotDetectionDepthHistogram(results) {
         x: results.dikeyAyrilmaMesafeleri,
         type: 'histogram',
         marker: {
-            color: 'rgba(239, 68, 68, 0.7)', // red-500
+            color: 'rgba(239, 68, 68, 0.7)', 
             line: { color: 'rgba(220, 38, 38, 1.0)', width: 1 }
         },
         xbins: { size: Math.max(10, (Math.max(...results.dikeyAyrilmaMesafeleri) / 10)) }
