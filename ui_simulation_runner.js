@@ -163,7 +163,7 @@ function updateUIWithResults(sonuclar, params) {
     document.getElementById('ortalamaTespitZamani').textContent = sonuclar.ortalamaTespitZamaniDk > 0 ? `${sonuclar.ortalamaTespitZamaniDk.toFixed(2)} dk` : 'Tespit Yok';
     document.getElementById('helikopterOperasyonSuresiValue').textContent = `${sonuclar.helikopterOperasyonSuresiDk.toFixed(2)} dk`;
     document.getElementById('toplamMaliyetValue').textContent = `$${sonuclar.toplamMaliyet.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
-    document.getElementById('tespitBasinaMaliyet').textContent = sonuclar.tespitBasinaMaliyet > 0 ? `$${sonuclar.tespitBasinaMaliyet.toLocaleString('en-US', {maximumFractionDigits: 0})}` : '$0';
+    document.getElementById('tespitBasinaMaliyet').textContent = sonuclar.tespitBasinaMaliyet > 0 ? `$${sonuclar.tespitBasinaMaliyet.toLocaleString('en-US', {maximumFractionDigits: 2})}` : '$0';
     
     const isOptimizationRelevant = params.rotaOptimizasyonuEtkin && sonuclar.kazanilanSureDk > 0.005;
     const optGroup = document.querySelector('.optimization-metric-group');
