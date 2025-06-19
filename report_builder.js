@@ -248,7 +248,7 @@ function renderComparisonSummaryAndStats(scenarios) {
                     </div>
                      <div class="metric-card">
                         <span class="label">Tespit Başına Maliyet</span>
-                        <span class="value cost">$${results.tespitBasinaMaliyet > 0 ? results.tespitBasinaMaliyet.toLocaleString('en-US', {maximumFractionDigits: 0}) : 'N/A'}</span>
+                        <span class="value cost">$${results.tespitBasinaMaliyet > 0 ? results.tespitBasinaMaliyet.toLocaleString('en-US', {maximumFractionDigits: 2}) : 'N/A'}</span>
                     </div>
                 </div>
             </div>
