@@ -65,13 +65,14 @@ async function runSensitivityAnalysisStepByStep(
                 saIsDatumKnown, 
                 (varyingParamId === 'datumX' ? currentTestValue : tempParams.datumX), 
                 (varyingParamId === 'datumY' ? currentTestValue : tempParams.datumY),
-                tempParams.costHeloHour,      // Yeni eklenen maliyet parametresi
-                tempParams.costSonobuoy,       // Yeni eklenen maliyet parametresi
-                null,                          // SA sırasında ilerleme çubuğu callback'i kullanılmıyor
-                true                           // isCalledFromSA = true
+                tempParams.costHeloHour,
+                tempParams.costSonobuoy,
+                tempParams.personelSaatlikMaliyet,          // GÜNCELLENDİ
+                tempParams.ucusSaatiBasinaBakimMaliyeti,    // GÜNCELLENDİ
+                null,
+                true
             );
 
-            // Duyarlılık analizi için maliyet çıktısını da alabilme
             let primaryValue, secondaryValue;
             
             if (outputMetricKeyPrimary === 'toplamMaliyet' || outputMetricKeyPrimary === 'tespitBasinaMaliyet') {
@@ -94,11 +95,11 @@ async function runSensitivityAnalysisStepByStep(
                 saResultsYSecondaryValues.push(secondaryValue);
             }
             if (onStepCompleteCallback) {
-                onStepCompleteCallback(true, null); // Başarılı adım
+                onStepCompleteCallback(true, null);
             }
 
         } catch (err) {
-            saResultsYPrimaryValues.push(NaN); // Hata durumunda NaN ekle
+            saResultsYPrimaryValues.push(NaN); 
             if (outputMetricKeySecondary !== 'none') {
                 saResultsYSecondaryValues.push(NaN);
             }
@@ -106,9 +107,9 @@ async function runSensitivityAnalysisStepByStep(
                  updateStatusCallback(`Hata (Adım ${currentSaStep + 1}): ${err.message}. Analiz durduruldu.`);
             }
             if (onStepCompleteCallback) {
-                onStepCompleteCallback(false, err); // Başarısız adım ve hata
+                onStepCompleteCallback(false, err);
             }
-            return { primaryResults: saResultsYPrimaryValues, secondaryResults: saResultsYSecondaryValues, errorOccurred: true, errorMessage: err.message }; // Hata oluştu, erken çık
+            return { primaryResults: saResultsYPrimaryValues, secondaryResults: saResultsYSecondaryValues, errorOccurred: true, errorMessage: err.message };
         }
     }
     return { primaryResults: saResultsYPrimaryValues, secondaryResults: saResultsYSecondaryValues, errorOccurred: false };
@@ -127,7 +128,7 @@ async function calculateBaselineForSA(
     if (updateStatusCallback) {
         updateStatusCallback('Temel değerler hesaplanıyor...');
     }
-    await new Promise(resolve => setTimeout(resolve, 30)); // UI güncellemesi için
+    await new Promise(resolve => setTimeout(resolve, 30)); 
 
     let baselineOutputValuePrimary = undefined;
     let baselineOutputValueSecondary = undefined;
@@ -144,10 +145,12 @@ async function calculateBaselineForSA(
             baselineParams.helikopterTasiyabilecegiKapasite, baselineParams.sonobuoyIkmalSuresiDk,
             saRotaOptimizasyonuEtkin,
             saIsDatumKnown, baselineParams.datumX, baselineParams.datumY,
-            baselineParams.costHeloHour,       // Yeni eklenen maliyet parametresi
-            baselineParams.costSonobuoy,        // Yeni eklenen maliyet parametresi
-            null,                               // SA sırasında ilerleme çubuğu callback'i kullanılmıyor
-            true                                // isCalledFromSA = true
+            baselineParams.costHeloHour,
+            baselineParams.costSonobuoy,
+            baselineParams.personelSaatlikMaliyet,      // GÜNCELLENDİ
+            baselineParams.ucusSaatiBasinaBakimMaliyeti,  // GÜNCELLENDİ
+            null,
+            true
         );
         baselineOutputValuePrimary = baselineResults[outputMetricKeyPrimary];
         if (outputMetricKeySecondary !== 'none') {
