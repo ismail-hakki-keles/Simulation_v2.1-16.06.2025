@@ -17,7 +17,7 @@ class GeneticOptimizer {
         this.progressCallback = progressCallback;
         this.population = [];
         this.bestIndividual = null;
-        this.bestFitness = -1;
+        this.bestFitness = -Infinity; // Minimize etme durumları için -1 yerine -Infinity
     }
 
     // 1. Başlangıç Popülasyonunu Oluştur
@@ -49,21 +49,47 @@ class GeneticOptimizer {
                     simParams.denizaltiRotaSapmaYuzdesi, simParams.sonarTespitBasariOrani, 100, 250,
                     simParams.akintiHizi, simParams.akintiYonu, simParams.helikopterTasiyabilecegiKapasite,
                     simParams.sonobuoyIkmalSuresiDk, simParams.rotaOptimizasyonuEtkin, simParams.isDatumKnown,
-                    simParams.datumX, simParams.datumY, simParams.costHeloHour, simParams.costSonobuoy, null, true
+                    simParams.datumX, simParams.datumY, simParams.costHeloHour, simParams.costSonobuoy,
+                    simParams.personelSaatlikMaliyet, simParams.ucusSaatiBasinaBakimMaliyeti,
+                    null, true
                 );
                 
                 individual.results = results;
-                let fitness = results.tespitOlasiligiYuzde;
+                let fitness = 0;
 
-                // Kısıt kontrolü ve ceza uygulama
-                if (results.toplamMaliyet > this.config.maxCost) {
-                    fitness *= 0.1; // Kısıtı aşanları ağır cezalandır
+                switch (this.config.objective) {
+                    case 'maximize_detection_prob':
+                        fitness = results.tespitOlasiligiYuzde;
+                        // Kısıt kontrolü ve dinamik ceza
+                        if (results.toplamMaliyet > this.config.maxCost) {
+                            const overageRatio = (results.toplamMaliyet - this.config.maxCost) / this.config.maxCost;
+                            const penaltyFactor = 1 - overageRatio;
+                            fitness *= Math.max(0.1, penaltyFactor); // %10 taban fitness
+                        }
+                        break;
+                    
+                    case 'minimize_cost':
+                        if (results.tespitOlasiligiYuzde < this.config.targetPd) {
+                            fitness = 0; // Hedefe ulaşamayanları ağır cezalandır
+                        } else {
+                            // Maliyet 0 olabileceğinden, 1 ekleyerek sıfıra bölmeyi önle
+                            fitness = 1 / (1 + results.toplamMaliyet);
+                        }
+                        break;
+
+                    case 'maximize_ratio':
+                        if (results.toplamMaliyet > 0) {
+                            fitness = results.tespitOlasiligiYuzde / results.toplamMaliyet;
+                        } else {
+                            fitness = results.tespitOlasiligiYuzde > 0 ? Infinity : 0; // Maliyet 0 ise ve tespit varsa fitness sonsuz
+                        }
+                        break;
                 }
                 individual.fitness = fitness;
 
             } catch (error) {
                 console.warn("Fitness evaluation failed for an individual:", error.message);
-                individual.fitness = 0; // Hata alan bireyi cezalandır
+                individual.fitness = -Infinity; // Hata alan bireyi cezalandır
             }
         }
     }
@@ -78,7 +104,7 @@ class GeneticOptimizer {
             for (let j = 0; j < tournamentSize; j++) {
                 tournament.push(this.population[Math.floor(Math.random() * this.population.length)]);
             }
-            newPopulation.push(tournament.reduce((best, current) => current.fitness > best.fitness ? current : best));
+            newPopulation.push(tournament.reduce((best, current) => (current.fitness > best.fitness) ? current : best));
         }
         this.population = newPopulation;
     }
@@ -87,7 +113,12 @@ class GeneticOptimizer {
     crossover() {
         const offspring = [];
         for (let i = 0; i < this.config.populationSize; i += 2) {
-            if (i + 1 >= this.config.populationSize) break;
+            if (i + 1 >= this.config.populationSize) {
+                 if (this.config.populationSize % 2 !== 0 && i < this.config.populationSize) {
+                    offspring.push(this.population[i]);
+                }
+                break;
+            }
             const parent1 = this.population[i];
             const parent2 = this.population[i + 1];
 
@@ -121,7 +152,8 @@ class GeneticOptimizer {
             await this.evaluateFitness();
 
             // En iyi bireyi güncelle
-            const currentBest = this.population.reduce((best, current) => (current.fitness > best.fitness) ? current : best);
+            const currentBest = this.population.reduce((best, current) => ((current.fitness > (best.fitness || -Infinity))) ? current : best, { fitness: -Infinity });
+            
             if (currentBest.fitness > this.bestFitness) {
                 this.bestFitness = currentBest.fitness;
                 this.bestIndividual = JSON.parse(JSON.stringify(currentBest)); // Deep copy
@@ -134,6 +166,9 @@ class GeneticOptimizer {
                 bestFitness: this.bestFitness,
                 bestIndividual: this.bestIndividual
             });
+            
+            // Son nesilde evrim adımlarını atla
+            if (gen === this.config.generations - 1) break;
 
             // Elitizm: En iyi bireyi doğrudan sonraki nesle aktar
             const elite = JSON.parse(JSON.stringify(this.bestIndividual));
@@ -145,6 +180,8 @@ class GeneticOptimizer {
             // Elit bireyi koru
             if (this.population.length > 0) {
                 this.population[0] = elite;
+            } else { // Eğer popülasyon tek sayıdaysa crossover sonrası boş kalabilir
+                this.population.push(elite);
             }
         }
         
