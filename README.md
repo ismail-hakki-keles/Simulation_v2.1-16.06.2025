@@ -41,7 +41,8 @@ Bu süreç, klasik yazılım geliştirme döngülerine bir alternatif sunarak, a
 
 ---
 
-## Simülasyon Metodolojisi ve Modelleri (_Bu kısım şu an geliştirme aşamasındadır, mevcut hali simülasyonun eski versiyonlarına aittir_)
+## Simülasyon Metodolojisi ve Modelleri 
+(_Bu kısım şu an geliştirme aşamasındadır, mevcut hali simülasyonun eski versiyonlarına aittir_)
 
 ### 1. Giriş ve Simülasyonun Amacı
 Bu simülasyon, Denizaltı Savunma Harbi (DSH) operasyonlarının planlanması ve analizi için geliştirilmiş, web tabanlı bir **stokastik karar destek sistemi** olarak tasarlanmıştır. DSH operasyonları; hedef konumu, hareket profili ve çevresel şartlar gibi yüksek derecede belirsizlik içeren karmaşık sistemlerdir. Bu aracın temel amacı, farklı operasyonel taktiklerin (örn: sonobuoy yerleşim stratejileri) ve kaynak atamalarının (örn: sonobuoy adedi, helikopter sorti sayısı), temel performans göstergeleri üzerindeki etkilerini nicel olarak değerlendirmektir. Bu göstergeler, hedefin **Tespit Olasılığı ($P_d$)** ve **Toplam Operasyon Maliyeti ($C_{total}$)** arasındaki ödünleşimi (trade-off) analiz ederek en etkin harekat tarzının (Course of Action - COA) belirlenmesine yardımcı olmayı hedefler.
