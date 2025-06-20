@@ -22,18 +22,48 @@
         <div class="section">
             <h2>Yönetici Özeti</h2>
             <p id="executive-summary" class="summary-text"></p>
+            <div id="narrative-analysis-container" style="margin-top: 25px;">
+                <h3 id="narrative-title" style="display: none;">Otomatik Sonuç Yorumu</h3>
+                <div id="narrative-summary-list"></div>
+            </div>
         </div>
-
+        
         <div class="section">
             <h2 id="overview-title">Genel Bakış ve İstatistikler</h2>
             <div id="report-summary-container" class="comparison-container">
-                </div>
+            </div>
+        </div>
+
+        <div id="comparison-visuals-section" class="section" style="display: none;">
+            <h2>Senaryo Karşılaştırma Analizi</h2>
+            <div class="chart-container">
+                <h3>Performans Karnesi</h3>
+                <p class="chart-desc">Senaryoların temel metriklerdeki sıralamalarını gösterir (1. en iyi). Renkler, göreceli başarıyı vurgular.</p>
+                <div id="scorecard-table-container"></div>
+            </div>
+            <div class="chart-container" style="margin-top: 45px;">
+                <h3>Metrik Karşılaştırma (Radar Grafiği)</h3>
+                <p class="chart-desc">Senaryoların normalize edilmiş performanslarını çok eksenli bir grafikte gösterir. Daha geniş alan, genellikle daha dengeli ve başarılı bir senaryoyu temsil eder.</p>
+                <div id="comparison-radar-chart" class="report-chart"></div>
+            </div>
+        </div>
+
+        
+        
+        <div id="relative-performance-section" class="section" style="display: none;">
+            <h2>Göreceli Performans Analizi</h2>
+            <div id="relative-performance-controls">
+                <label for="referenceScenarioSelect">Referans Senaryo Seçin:</label>
+                <select id="referenceScenarioSelect"></select>
+            </div>
+            <p class="chart-desc">Tüm senaryoların performansını, seçilen referans senaryoya kıyasla yüzdesel değişim olarak gösterir.</p>
+            <div id="relative-performance-table-container"></div>
         </div>
         
         <div class="section">
             <h2 id="params-title">Simülasyon Parametreleri</h2>
             <div id="report-params-container" class="comparison-container">
-                 </div>
+            </div>
         </div>
 
         <div id="visuals-section" class="section">
@@ -48,7 +78,7 @@
                     <h3>Detaylı Maliyet Dökümü</h3>
                     <p class="chart-desc">Toplam operasyon maliyetinin kaynaklara göre dağılımı.</p>
                     <div id="cost-breakdown-table">
-                        </div>
+                    </div>
                 </div>
                 <div id="route-comparison-container" class="chart-container">
                     <h3>Helikopter Rota Optimizasyon Analizi</h3>
@@ -60,7 +90,7 @@
             <div id="tactical-analysis-section">
                 <h2>Geometrik ve Taktiksel Analiz</h2>
                 <div id="report-geometry-metrics-container" class="comparison-container">
-                    </div>
+                </div>
                 <div class="chart-container">
                     <h3>Tespit Isı Haritası</h3>
                     <p class="chart-desc">Başarılı tespitlerin operasyon sahası üzerindeki coğrafi yoğunluğunu gösterir.</p>
@@ -93,6 +123,7 @@
         </footer>
     </div>
 
+    <script src="config.js"></script>
     <script src="report_builder.js"></script>
     <script src="report_visuals.js"></script>
     <script src="report.js"></script>
