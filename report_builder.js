@@ -29,7 +29,7 @@ function renderSingleExecutiveSummary(params, results) {
     let summaryText = `
         Bu senaryoda, <strong>${fiiliBirakilanSonobuoySayisi} adet sonobuoy</strong> kullanılarak 
         <strong>%${tespitOlasiligiYuzde.toFixed(2)}</strong> tespit olasılığına, yaklaşık 
-        <strong>$${toplamMaliyet.toLocaleString('en-US')}</strong> maliyetle ulaşılmıştır. 
+        <strong>$${toplamMaliyet.toLocaleString('en-US')}</strong> toplam maliyetle ulaşılmıştır. 
     `;
 
     const buoyCounts = getBuoyEffectivenessData(results);
@@ -40,6 +40,74 @@ function renderSingleExecutiveSummary(params, results) {
         summaryText += ` Senaryoda herhangi bir tespit gerçekleşmemiştir.`;
     }
     summaryElement.innerHTML = summaryText;
+}
+
+function renderNarrativeSummary(results, params) {
+    const container = document.getElementById('narrative-summary-list');
+    const title = document.getElementById('narrative-title');
+    if (!container || !title) return;
+
+    const comments = [];
+    const { highDetectionProb, lowDetectionProb, inefficientCostPerDetectionMultiplier, efficientCostPerDetectionMultiplier, singleBuoyDominanceRatio, highTransitTimeRatio, significantOptimizationGainMinutes, wideConfidenceInterval } = analystThresholds;
+
+    // 1. Tespit Olasılığı Değerlendirmesi
+    if (results.tespitOlasiligiYuzde >= highDetectionProb) {
+        comments.push({ type: 'positive', text: `<strong>Yüksek Başarı Oranı:</strong> Elde edilen %${results.tespitOlasiligiYuzde.toFixed(1)}'lik tespit olasılığı, kurulan sonobuoy bariyerinin geometrik olarak hedefin yolunu kesmede oldukça etkili olduğunu göstermektedir.` });
+    } else if (results.tespitOlasiligiYuzde <= lowDetectionProb && results.fiiliBirakilanSonobuoySayisi > 0) {
+        comments.push({ type: 'negative', text: `<strong>Düşük Başarı Oranı:</strong> %${results.tespitOlasiligiYuzde.toFixed(1)}'lik tespit olasılığı, mevcut stratejinin hedefi tespit etmede yetersiz kaldığını göstermektedir. Sonobuoy adedi, yerleşim paterni veya sonar parametrelerinin gözden geçirilmesi gerekebilir.` });
+    }
+
+    // 2. Güven Aralığı Değerlendirmesi
+    const ciWidth = results.ci_ust_yuzde - results.ci_alt_yuzde;
+    if (ciWidth > wideConfidenceInterval) {
+        comments.push({ type: 'warning', text: `<strong>İstatistiksel Belirsizlik:</strong> Tespit olasılığı tahmininin %95 güven aralığı (%${ciWidth.toFixed(1)}) geniştir. Bu, sonucun istatistiksel olarak daha az kararlı olduğunu gösterir. Daha güvenilir bir sonuç için 'Monte Carlo Yol Sayısı'nı artırmak faydalı olabilir.` });
+    }
+
+    // 3. Maliyet-Etkinlik Değerlendirmesi
+    if (results.tespitBasinaMaliyet > results.toplamMaliyet * inefficientCostPerDetectionMultiplier && results.toplamMaliyet > 0) {
+        comments.push({ type: 'negative', text: `<strong>Düşük Maliyet-Etkinlik:</strong> Tespit başına düşen maliyetin ($${results.tespitBasinaMaliyet.toLocaleString()}) operasyonun toplam maliyetini aşması, başarılı tespit sayısının çok düşük olduğuna işaret eder. Strateji, genel olarak verimsizdir.` });
+    } else if (results.tespitBasinaMaliyet < (params.costSonobuoy * efficientCostPerDetectionMultiplier) && results.tespitBasinaMaliyet > 0) {
+        comments.push({ type: 'positive', text: `<strong>Yüksek Maliyet-Etkinlik:</strong> Tespit başına düşen maliyet ($${results.tespitBasinaMaliyet.toLocaleString()}), kullanılan kaynaklara göre oldukça verimli bir sonuç elde edildiğini göstermektedir.` });
+    }
+
+    // 4. Kaynak Kullanımı Değerlendirmesi
+    const buoyEffectiveness = getBuoyEffectivenessData(results);
+    if (buoyEffectiveness.totalDetections > 0 && (buoyEffectiveness.values[0] / buoyEffectiveness.totalDetections) > singleBuoyDominanceRatio) {
+        comments.push({ type: 'warning', text: `<strong>Dengesiz Kaynak Kullanımı:</strong> Tespitlerin %${(buoyEffectiveness.values[0] / buoyEffectiveness.totalDetections * 100).toFixed(0)}'ının tek bir sonobuoy (${buoyEffectiveness.labels[0]}) tarafından yapılması, bariyerin diğer kısımlarının atıl kalmış olabileceğine işaret eder. Paternin geometrisi veya yerleşimi yeniden gözden geçirilmelidir.` });
+    }
+
+    // 5. Helikopter Verimliliği Değerlendirmesi
+    let totalTransitTime = 0;
+    if (results.helikopterHareketKaydi) {
+        results.helikopterHareketKaydi.forEach(seg => {
+            if (seg.type === 'to_drop_point' || seg.type === 'to_base') {
+                totalTransitTime += seg.endTimeDk - seg.startTimeDk;
+            }
+        });
+        if (results.helikopterOperasyonSuresiDk > 0 && (totalTransitTime / results.helikopterOperasyonSuresiDk) > highTransitTimeRatio) {
+            comments.push({ type: 'negative', text: `<strong>Verimsiz Helikopter Kullanımı:</strong> Helikopterin toplam operasyon süresinin %${(totalTransitTime / results.helikopterOperasyonSuresiDk * 100).toFixed(0)}'ını üs ile operasyon sahası arasındaki intikallerde geçirmesi, üs konumunun sahaya uzak olduğunu ve operasyonel verimliliği düşürdüğünü göstermektedir.` });
+        }
+    }
+
+    // 6. Optimizasyon Etkisi
+    if (params.rotaOptimizasyonuEtkin && results.kazanilanSureDk > significantOptimizationGainMinutes) {
+        comments.push({ type: 'positive', text: `<strong>Başarılı Rota Optimizasyonu:</strong> Helikopter rota optimizasyonu, operasyon süresini yaklaşık ${results.kazanilanSureDk.toFixed(0)} dakika kısaltarak önemli bir verimlilik kazancı sağlamıştır.` });
+    }
+
+    // HTML oluşturma
+    if (comments.length > 0) {
+        title.style.display = 'block';
+        const iconMap = { positive: '✅', negative: '❗', warning: '⚠️' };
+        let html = '<ul>';
+        comments.forEach(comment => {
+            html += `<li class="${comment.type}"><span class="icon">${iconMap[comment.type]}</span><span>${comment.text}</span></li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+    } else {
+        title.style.display = 'none';
+        container.innerHTML = '';
+    }
 }
 
 function renderSingleSummaryAndStats(results) {
@@ -72,19 +140,30 @@ function renderSingleCostBreakdown(params, results) {
     const costTableDiv = document.getElementById('cost-breakdown-table');
     if (!costTableDiv) return;
 
-    const heloCost = (results.helikopterOperasyonSuresiDk / 60.0) * (params.costHeloHour || 0);
+    const operasyonSuresiSaat = results.helikopterOperasyonSuresiDk / 60.0;
+    const heloCost = operasyonSuresiSaat * (params.costHeloHour || 0);
     const buoyCost = results.fiiliBirakilanSonobuoySayisi * (params.costSonobuoy || 0);
-    const heloTooltip = createTooltip(metricTooltips['Helikopter Uçuş Maliyeti']);
-    const buoyTooltip = createTooltip(metricTooltips['Tüketilen Sonobuoy Maliyeti']);
+    const personelCost = operasyonSuresiSaat * (params.personelSaatlikMaliyet || 0);
+    const bakimCost = operasyonSuresiSaat * (params.ucusSaatiBasinaBakimMaliyeti || 0);
 
-
+    const tooltips = {
+        helo: createTooltip(metricTooltips['Helikopter Uçuş Maliyeti']),
+        buoy: createTooltip(metricTooltips['Tüketilen Sonobuoy Maliyeti']),
+        personel: createTooltip(metricTooltips['Personel Maliyeti']),
+        bakim: createTooltip(metricTooltips['Bakım Maliyeti'])
+    };
+    
     costTableDiv.innerHTML = `
         <table>
             <tbody>
-                <tr><td>Helikopter Uçuş Maliyeti ${heloTooltip}</td><td>$${heloCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
-                <tr><td>Tüketilen Sonobuoy Maliyeti ${buoyTooltip}</td><td>$${buoyCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
-                <tr><th>Toplam Operasyon Maliyeti</th><th>$${results.toplamMaliyet.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</th></tr>
+                <tr><td>Helikopter Uçuş (Yakıt) Maliyeti ${tooltips.helo}</td><td style="text-align:right;">$${heloCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                <tr><td>Personel Maliyeti ${tooltips.personel}</td><td style="text-align:right;">$${personelCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                <tr><td>Bakım Maliyeti ${tooltips.bakim}</td><td style="text-align:right;">$${bakimCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
+                <tr><td>Tüketilen Sonobuoy Maliyeti ${tooltips.buoy}</td><td style="text-align:right;">$${buoyCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>
             </tbody>
+            <tfoot>
+                <tr><th>Toplam Operasyon Maliyeti</th><th style="text-align:right;">$${results.toplamMaliyet.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</th></tr>
+            </tfoot>
         </table>`;
 }
 
@@ -159,6 +238,8 @@ function renderSingleParametersTable(params, results) {
         datumY: { name: "Datum Y Koordinatı (NM)", dependsOn: 'datumBilgisiMevcut' },
         costHeloHour: { name: "Birim Uçuş Saati Maliyeti ($)" },
         costSonobuoy: { name: "Sonobuoy Başına Maliyet ($)" },
+        personelSaatlikMaliyet: { name: "Personel Saatlik Maliyet ($)" },
+        ucusSaatiBasinaBakimMaliyeti: { name: "Uçuş Saati Başına Bakım Maliyeti ($)" },
         simulasyonDenizaltiYolSayisi: { name: "Monte Carlo Yol Sayısı" },
     };
 
@@ -183,7 +264,7 @@ function renderSingleParametersTable(params, results) {
             } else if (typeof value === 'number' && !Number.isInteger(value)) {
                 value = value.toFixed(2);
             }
-            tableHTML += `<tr><td>${config.name}${tooltip}</td><td>${value}</td></tr>`;
+            tableHTML += `<tr><td>${config.name}${tooltip}</td><td style="text-align:right;">${value}</td></tr>`;
         }
     }
 
@@ -218,6 +299,7 @@ function renderComparisonExecutiveSummary(scenarios) {
         Toplam <strong>${scenarios.length} senaryo</strong> karşılaştırılmıştır. 
         En yüksek tespit olasılığı (<strong>%${bestPd.value.toFixed(2)}</strong>) <strong>${bestPd.name}</strong> ile elde edilirken,
         en düşük maliyetli operasyon (<strong>$${bestCost.value.toLocaleString('en-US')}</strong>) <strong>${bestCost.name}</strong> olmuştur.
+        Detaylı analiz için aşağıdaki karne, radar ve göreceli performans tablolarını inceleyebilirsiniz.
     `;
 }
 
@@ -248,7 +330,7 @@ function renderComparisonSummaryAndStats(scenarios) {
                     </div>
                      <div class="metric-card">
                         <span class="label">Tespit Başına Maliyet</span>
-                        <span class="value cost">$${results.tespitBasinaMaliyet > 0 ? results.tespitBasinaMaliyet.toLocaleString('en-US', {maximumFractionDigits: 2}) : 'N/A'}</span>
+                        <span class="value cost">$${results.tespitBasinaMaliyet > 0 ? results.tespitBasinaMaliyet.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}</span>
                     </div>
                 </div>
             </div>
@@ -274,6 +356,8 @@ function renderComparisonParametersTable(scenarios) {
         rotaOptimizasyonuEtkin: { name: "Rota Optimizasyonu", type: 'boolean' },
         costHeloHour: { name: "Saatlik Uçuş Maliyeti ($)" },
         costSonobuoy: { name: "Birim Sonobuoy Maliyeti ($)" },
+        personelSaatlikMaliyet: { name: "Personel Saatlik Maliyet ($)" },
+        ucusSaatiBasinaBakimMaliyeti: { name: "Bakım Saatlik Maliyeti ($)" },
     };
 
     let tableHTML = '<table><thead><tr><th>Parametre</th>';
@@ -289,7 +373,9 @@ function renderComparisonParametersTable(scenarios) {
             if (paramDisplayMap[key].type === 'boolean') {
                 value = value ? 'Aktif' : 'Pasif';
             } else if (typeof value === 'number' && !Number.isInteger(value)) {
-                value = value.toFixed(2);
+                value = value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            } else if (typeof value === 'number') {
+                value = value.toLocaleString('en-US');
             } else if (value === 'barrier_vertical_middle') {
                 value = 'Dikey Bariyer';
             } else if (value === 'grid') {
@@ -311,4 +397,102 @@ function renderComparisonParametersTable(scenarios) {
 
     tableHTML += '</tbody></table>';
     container.innerHTML = tableHTML;
+}
+
+function renderScorecard(scenarios) {
+    const container = document.getElementById('scorecard-table-container');
+    if (!container) return;
+
+    const metrics = [
+        { key: 'tespitOlasiligiYuzde', name: 'Tespit Olasılığı', higherIsBetter: true },
+        { key: 'toplamMaliyet', name: 'Toplam Maliyet', higherIsBetter: false },
+        { key: 'helikopterOperasyonSuresiDk', name: 'Operasyon Süresi', higherIsBetter: false },
+        { key: 'tespitBasinaMaliyet', name: 'Tespit Başına Maliyet', higherIsBetter: false }
+    ];
+
+    let table = '<table><thead><tr><th>Metrik</th>';
+    scenarios.forEach(s => table += `<th>${s.name}</th>`);
+    table += '</tr></thead><tbody>';
+
+    metrics.forEach(metric => {
+        // Handle 'tespitBasinaMaliyet' where 0 can be 'N/A' but should be ranked last if others exist
+        const values = scenarios.map(s => {
+            let val = s.results[metric.key];
+            if (metric.key === 'tespitBasinaMaliyet' && val === 0) {
+                return Infinity; // Rank 0 cost as worst (Infinity)
+            }
+            return val;
+        });
+
+        const sorted = [...values].sort((a, b) => metric.higherIsBetter ? b - a : a - b);
+        const ranks = values.map(v => {
+            const rank = sorted.indexOf(v) + 1;
+            return rank === 0 ? scenarios.length : rank; // Handle potential issues
+        });
+
+        table += `<tr><td>${metric.name}</td>`;
+        ranks.forEach(rank => {
+            const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === scenarios.length ? 'rank-last' : ''));
+            table += `<td class="${rankClass}">${rank}.</td>`;
+        });
+        table += '</tr>';
+    });
+
+    table += '</tbody></table>';
+    container.innerHTML = table;
+}
+
+function renderRelativePerformance(scenarios, referenceScenarioName) {
+    const container = document.getElementById('relative-performance-table-container');
+    if (!container) return;
+    
+    const referenceScenario = scenarios.find(s => s.name === referenceScenarioName);
+    if (!referenceScenario) return;
+
+    const metrics = [
+        { key: 'tespitOlasiligiYuzde', name: 'Tespit Olasılığı (%)', higherIsBetter: true },
+        { key: 'toplamMaliyet', name: 'Toplam Maliyet ($)', higherIsBetter: false },
+        { key: 'helikopterOperasyonSuresiDk', name: 'Operasyon Süresi (dk)', higherIsBetter: false },
+        { key: 'tespitBasinaMaliyet', name: 'Tespit Başına Maliyet ($)', higherIsBetter: false }
+    ];
+
+    let table = '<table><thead><tr><th>Metrik</th>';
+    scenarios.forEach(s => {
+        if (s.name !== referenceScenarioName) {
+            table += `<th>${s.name} vs. Ref.</th>`;
+        }
+    });
+    table += '</tr></thead><tbody>';
+
+    metrics.forEach(metric => {
+        table += `<tr><td>${metric.name}</td>`;
+        const refValue = referenceScenario.results[metric.key];
+
+        scenarios.forEach(s => {
+            if (s.name !== referenceScenarioName) {
+                const currentValue = s.results[metric.key];
+                let diff = 0;
+                if (refValue > 0) {
+                    diff = ((currentValue - refValue) / refValue) * 100;
+                } else if (currentValue > 0) {
+                    diff = Infinity; // Reference is 0, current is not
+                }
+
+                let diffClass = 'neutral-change';
+                if (Math.abs(diff) > 0.1) {
+                    if (diff > 0) {
+                        diffClass = metric.higherIsBetter ? 'positive-change' : 'negative-change';
+                    } else {
+                        diffClass = metric.higherIsBetter ? 'negative-change' : 'positive-change';
+                    }
+                }
+                const diffText = isFinite(diff) ? `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%` : 'N/A';
+                table += `<td><span class="${diffClass}">${diffText}</span></td>`;
+            }
+        });
+        table += '</tr>';
+    });
+
+    table += '</tbody></table>';
+    container.innerHTML = table;
 }
