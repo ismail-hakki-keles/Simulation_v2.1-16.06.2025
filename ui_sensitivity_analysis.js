@@ -138,7 +138,7 @@ async function runSensitivityAnalysis() {
             paramValuesToTest.push(startVal + i * stepSize);
         }
 
-        const saMcYolSayisi = Math.max(100, Math.min(250, Math.floor(baselineParams.simulasyonDenizaltiYolSayisi / 4)));
+        const saMcYolSayisi = Math.max(500, Math.min(1000, Math.floor(baselineParams.simulasyonDenizaltiYolSayisi / 4)));
         const saYolKontrolNoktasiSayisiSim = (baselineParams.denizaltiYolDetaySeviyesi === "dusuk") ? 100 : 250;
         
         const baselineResultsSA = await calculateBaselineForSA(baselineParams, primaryMetricSA, secondaryMetricSA, saMcYolSayisi, saYolKontrolNoktasiSayisiSim, baselineParams.rotaOptimizasyonuEtkin, baselineParams.isDatumKnown, (status) => saStatusElement.textContent = status);
