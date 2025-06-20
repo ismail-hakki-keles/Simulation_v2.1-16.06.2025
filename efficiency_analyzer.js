@@ -17,9 +17,16 @@ async function runEfficiencyAnalysis(baseParams, eaParams, progressCallback) {
     for (let i = 0; i < totalScenarios; i++) {
         // Rastgele parametre seti oluştur
         const randomParams = { ...baseParams };
-        randomParams.sonobuoyAdedi = getRandomInt(eaParams.sonobuoyCountMin, eaParams.sonobuoyCountMax);
-        randomParams.sonarYaricap = getRandomFloat(eaParams.sonarRadiusMin, eaParams.sonarRadiusMax);
-        randomParams.sonarTespitBasariOrani = getRandomFloat(eaParams.detectionProbMin, eaParams.detectionProbMax);
+        
+        if (eaParams.variablesToChange.includes('sonobuoyAdedi')) {
+            randomParams.sonobuoyAdedi = getRandomInt(eaParams.sonobuoyCountMin, eaParams.sonobuoyCountMax);
+        }
+        if (eaParams.variablesToChange.includes('sonarYaricap')) {
+            randomParams.sonarYaricap = getRandomFloat(eaParams.sonarRadiusMin, eaParams.sonarRadiusMax);
+        }
+        if (eaParams.variablesToChange.includes('sonarTespitBasariOrani')) {
+            randomParams.sonarTespitBasariOrani = getRandomFloat(eaParams.detectionProbMin, eaParams.detectionProbMax);
+        }
 
         // Arayüzü kilitlememek için küçük bir bekleme
         await new Promise(resolve => setTimeout(resolve, 10)); 
@@ -37,17 +44,27 @@ async function runEfficiencyAnalysis(baseParams, eaParams, progressCallback) {
                 randomParams.rotaOptimizasyonuEtkin,
                 randomParams.isDatumKnown, randomParams.datumX, randomParams.datumY,
                 randomParams.costHeloHour, randomParams.costSonobuoy,
+                randomParams.personelSaatlikMaliyet, randomParams.ucusSaatiBasinaBakimMaliyeti,
                 null, true // SA'dan çağrıldı gibi davran, progress callback kullanma
             );
             
+            // Parametreleri sadece değiştirilenleri içerecek şekilde daralt
+            const changedParams = {};
+            if (eaParams.variablesToChange.includes('sonobuoyAdedi')) {
+                changedParams.sonobuoyAdedi = randomParams.sonobuoyAdedi;
+            }
+            if (eaParams.variablesToChange.includes('sonarYaricap')) {
+                changedParams.sonarYaricap = randomParams.sonarYaricap.toFixed(2);
+            }
+             if (eaParams.variablesToChange.includes('sonarTespitBasariOrani')) {
+                changedParams.sonarTespitBasariOrani = randomParams.sonarTespitBasariOrani.toFixed(2);
+            }
+
             results.push({
                 cost: result.toplamMaliyet,
                 probability: result.tespitOlasiligiYuzde,
-                params: {
-                    sonobuoyAdedi: randomParams.sonobuoyAdedi,
-                    sonarYaricap: randomParams.sonarYaricap.toFixed(2),
-                    sonarTespitBasariOrani: randomParams.sonarTespitBasariOrani.toFixed(2)
-                }
+                params: changedParams,
+                full_params: randomParams // Tıklama olayı için tüm parametreleri sakla
             });
 
         } catch (error) {
