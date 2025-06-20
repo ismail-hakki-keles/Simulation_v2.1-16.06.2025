@@ -152,6 +152,22 @@ function plotEfficiencyFrontier(analysisResults) {
 
     const nonFrontierPoints = allPoints.filter(p => !frontierPoints.includes(p));
 
+    // Değişen parametrelerin isimlerini al
+    const changedParamKeys = allPoints.length > 0 ? Object.keys(allPoints[0].params) : [];
+    const paramNameMapping = {
+        'sonobuoyAdedi': 'SB Adet',
+        'sonarYaricap': 'SB Yarıçap (NM)',
+        'sonarTespitBasariOrani': 'Tespit Oranı'
+    };
+
+    function generateHoverText(point) {
+        let text = `Maliyet: $${Math.round(point.cost)}<br>P(d): %${point.probability.toFixed(1)}`;
+        for(const key of changedParamKeys) {
+            text += `<br>${paramNameMapping[key] || key}: ${point.params[key]}`;
+        }
+        return text;
+    }
+
     const traceAll = {
         x: nonFrontierPoints.map(p => p.cost),
         y: nonFrontierPoints.map(p => p.probability),
@@ -162,8 +178,9 @@ function plotEfficiencyFrontier(analysisResults) {
             color: 'rgba(107, 114, 128, 0.5)',
             size: 6
         },
-        text: nonFrontierPoints.map(p => `Maliyet: $${Math.round(p.cost)}<br>P(d): %${p.probability.toFixed(1)}<br>SB Adet: ${p.params.sonobuoyAdedi}<br>SB Yarıçap: ${p.params.sonarYaricap} NM<br>Tespit Oranı: ${p.params.sonarTespitBasariOrani}`),
-        hoverinfo: 'text'
+        text: nonFrontierPoints.map(generateHoverText),
+        hoverinfo: 'text',
+        customdata: nonFrontierPoints.map(p => p.full_params)
     };
 
     const traceFrontier = {
@@ -181,12 +198,13 @@ function plotEfficiencyFrontier(analysisResults) {
             size: 8,
             symbol: 'star'
         },
-        text: frontierPoints.map(p => `Maliyet: $${Math.round(p.cost)}<br>P(d): %${p.probability.toFixed(1)}<br>SB Adet: ${p.params.sonobuoyAdedi}<br>SB Yarıçap: ${p.params.sonarYaricap} NM<br>Tespit Oranı: ${p.params.sonarTespitBasariOrani}`),
-        hoverinfo: 'text'
+        text: frontierPoints.map(generateHoverText),
+        hoverinfo: 'text',
+        customdata: frontierPoints.map(p => p.full_params)
     };
 
     const layout = {
-        title: { text: 'Maliyet-Etkinlik Sınırı (Efficient Frontier)', font: { size: 16, color: '#e0f2fe' } },
+        title: { text: 'Maliyet-Etkinlik Sınırı (Tıklanabilir)', font: { size: 16, color: '#e0f2fe' } },
         font: { color: '#c0c5ce' },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
@@ -196,5 +214,21 @@ function plotEfficiencyFrontier(analysisResults) {
         hovermode: 'closest'
     };
 
-    Plotly.newPlot(graphDiv, [traceAll, traceFrontier], layout);
+    Plotly.newPlot(graphDiv, [traceAll, traceFrontier], layout).then(gd => {
+        gd.on('plotly_click', (data) => {
+            if (data.points.length > 0) {
+                const pointData = data.points[0];
+                const scenarioParams = pointData.customdata;
+                if (scenarioParams) {
+                    populateForm(scenarioParams);
+                    showUserMessage(`Senaryo parametreleri forma yüklendi.`, 'info');
+                    // Kullanıcıyı formun başına kaydır
+                    const formContainer = document.querySelector('.parameters');
+                    if (formContainer) {
+                        formContainer.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            }
+        });
+    });
 }
