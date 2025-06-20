@@ -177,49 +177,37 @@ function updateComparisonBasketUI() {
     const listElement = document.getElementById('comparisonList');
     const reportButton = document.getElementById('exportComparisonReportBtn');
 
-    // 1. Her durumda listenin içini temizleyerek başla.
     listElement.innerHTML = '';
 
-    // 2. Sepette senaryo olup olmadığını kontrol et.
     if (comparisonScenarios.length > 0) {
-        // 2a. Eğer senaryo VARSA, bunları listeye ekle.
         comparisonScenarios.forEach(scenario => {
             const listItem = document.createElement('li');
             listItem.textContent = scenario.name;
             listElement.appendChild(listItem);
         });
     } else {
-        // 2b. Eğer senaryo YOKSA, bilgilendirme mesajı ekle.
         const emptyMessageItem = document.createElement('li');
         emptyMessageItem.textContent = 'Henüz karşılaştırılmaya eklenmiş senaryo yok.';
-        // Mesajın farklı görünmesi için stil ekleyelim.
         emptyMessageItem.style.fontStyle = 'italic';
         emptyMessageItem.style.color = '#9ca3af';
         emptyMessageItem.style.borderLeft = 'none';
         listElement.appendChild(emptyMessageItem);
     }
 
-    // 3. Rapor butonunun durumunu güncelle (bu kısım aynı).
     reportButton.disabled = comparisonScenarios.length < 2;
 }
 
 function cleanResultsForReport(results) {
     const leanResults = JSON.parse(JSON.stringify(results));
     
-    // ÖNEMLİ DÜZELTME:
-    // denizaltiYollariVeTespitDurumu dizisini KESİNLİKLE kısaltmıyoruz.
-    // Çünkü tüm grafikler istatistiklerini bu tam dizi üzerinden hesaplıyor.
-    // Sadece rapor sayfasında görselleştirilecek yol sayısını sınırlamak için
-    // yol noktalarını (dizinin içindeki büyük veri) temizliyoruz.
     if (leanResults.denizaltiYollariVeTespitDurumu) {
         leanResults.denizaltiYollariVeTespitDurumu.forEach(yol => {
             if (yol && yol[0]) {
-                yol[0] = []; // Sadece yol noktası verisini sil, ana sonucu koru.
+                yol[0] = []; 
             }
         });
     }
 
-    // Helikopter hareket kaydını sadece gerekli verileri içerecek şekilde küçült
     if (leanResults.helikopterHareketKaydi) {
         leanResults.helikopterHareketKaydi = leanResults.helikopterHareketKaydi.map(seg => ({
             type: seg.type,
@@ -259,9 +247,16 @@ function setupEfficiencyAnalysis() {
                 return;
             }
             
+            const variablesToChange = Array.from(document.querySelectorAll('#eaVariableParamsContainer input[type="checkbox"]:checked')).map(cb => cb.value);
+            if(variablesToChange.length === 0){
+                showUserMessage('Lütfen etkinlik analizi için en az bir değişken parametre seçin.', 'error');
+                return;
+            }
+
             const eaParams = {
                 scenarioCount: parseInt(document.getElementById('eaScenarioCount').value),
                 monteCarloRuns: parseInt(document.getElementById('eaMonteCarloRuns').value),
+                variablesToChange: variablesToChange,
                 sonobuoyCountMin: parseInt(document.getElementById('eaSonobuoyCountMin').value),
                 sonobuoyCountMax: parseInt(document.getElementById('eaSonobuoyCountMax').value),
                 sonarRadiusMin: parseFloat(document.getElementById('eaSonarRadiusMin').value),
@@ -305,12 +300,32 @@ function setupEfficiencyAnalysis() {
 function setupOptimization() {
     const optEnableCheckbox = document.getElementById('optEnableAnalysis');
     const optRunButton = document.getElementById('optRunButton');
+    const optObjectiveSelect = document.getElementById('optObjective');
     const allButtons = [document.getElementById('runSimBtn'), document.getElementById('saRunButton'), document.getElementById('eaRunButton')];
 
     if (optEnableCheckbox) {
         optEnableCheckbox.addEventListener('change', () => {
             document.getElementById('optControls').style.display = optEnableCheckbox.checked ? 'block' : 'none';
         });
+    }
+
+    if (optObjectiveSelect) {
+        optObjectiveSelect.addEventListener('change', (e) => {
+            const selectedObjective = e.target.value;
+            const maxCostContainer = document.getElementById('optMaxCost').parentElement;
+            const targetPdContainer = document.getElementById('optTargetPdContainer');
+
+            maxCostContainer.style.display = 'none';
+            targetPdContainer.style.display = 'none';
+
+            if (selectedObjective === 'maximize_detection_prob') {
+                maxCostContainer.style.display = 'block';
+            } else if (selectedObjective === 'minimize_cost') {
+                targetPdContainer.style.display = 'block';
+            }
+        });
+        // Trigger change to set initial state
+        optObjectiveSelect.dispatchEvent(new Event('change'));
     }
 
     if (optRunButton) {
@@ -330,7 +345,9 @@ function setupOptimization() {
                 populationSize: parseInt(document.getElementById('optPopulationSize').value),
                 generations: parseInt(document.getElementById('optGenerations').value),
                 mutationRate: parseFloat(document.getElementById('optMutationRate').value),
+                objective: document.getElementById('optObjective').value,
                 maxCost: parseFloat(document.getElementById('optMaxCost').value),
+                targetPd: parseFloat(document.getElementById('optTargetPd').value),
                 searchSpace: {
                     sonobuoyCount: { min: parseInt(document.getElementById('optSonobuoyCountMin').value), max: parseInt(document.getElementById('optSonobuoyCountMax').value) },
                     sonarRadius: { min: parseFloat(document.getElementById('optSonarRadiusMin').value), max: parseFloat(document.getElementById('optSonarRadiusMax').value) }
@@ -349,7 +366,12 @@ function setupOptimization() {
             outputContainer.style.display = 'block';
 
             const progressCallback = (progress) => {
-                logElement.innerHTML += `<p>Nesil ${progress.generation}/${progress.totalGenerations} | En İyi Olasılık: %${progress.bestFitness.toFixed(2)}</p>`;
+                const bestInd = progress.bestIndividual;
+                if(bestInd && bestInd.results) {
+                    logElement.innerHTML += `<p>Nesil ${progress.generation}/${progress.totalGenerations} | En İyi P(d): %${bestInd.results.tespitOlasiligiYuzde.toFixed(2)}, Maliyet: $${bestInd.results.toplamMaliyet.toLocaleString('en-US')}</p>`;
+                } else {
+                     logElement.innerHTML += `<p>Nesil ${progress.generation}/${progress.totalGenerations} | Uygun çözüm bekleniyor...</p>`;
+                }
                 logElement.scrollTop = logElement.scrollHeight;
             };
 
@@ -357,11 +379,16 @@ function setupOptimization() {
                 const optimizer = new GeneticOptimizer(optimizerConfig, baseParams, progressCallback);
                 const bestSolution = await optimizer.run();
                 
-                resultElement.innerHTML = `<strong>Optimizasyon Tamamlandı!</strong><br>
-                Bulunan en iyi senaryo:<br>
-                - Tespit Olasılığı: <strong>%${bestSolution.results.tespitOlasiligiYuzde.toFixed(2)}</strong><br>
-                - Toplam Maliyet: <strong>$${bestSolution.results.toplamMaliyet.toLocaleString('en-US')}</strong> (Kısıt: $${optimizerConfig.maxCost.toLocaleString('en-US')})<br>
-                - Parametreler: Sonobuoy Adedi = <strong>${bestSolution.params.sonobuoyAdedi}</strong>, Sonar Yarıçapı = <strong>${bestSolution.params.sonarYaricap.toFixed(2)} NM</strong>`;
+                let resultHTML = `<strong>Optimizasyon Tamamlandı!</strong><br>Bulunan en iyi senaryo:<br>`;
+                if (bestSolution && bestSolution.results) {
+                     resultHTML += 
+                    `- Tespit Olasılığı: <strong>%${bestSolution.results.tespitOlasiligiYuzde.toFixed(2)}</strong><br>
+                    - Toplam Maliyet: <strong>$${bestSolution.results.toplamMaliyet.toLocaleString('en-US')}</strong><br>
+                    - Parametreler: Sonobuoy Adedi = <strong>${bestSolution.params.sonobuoyAdedi}</strong>, Sonar Yarıçapı = <strong>${bestSolution.params.sonarYaricap.toFixed(2)} NM</strong>`;
+                } else {
+                    resultHTML += "Belirtilen kısıtlar altında uygun bir çözüm bulunamadı.";
+                }
+                resultElement.innerHTML = resultHTML;
                 
             } catch (err) {
                 showUserMessage(`Optimizasyon sırasında hata: ${err.message}`, 'error');
