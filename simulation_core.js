@@ -22,7 +22,7 @@ function hesaplaTespitOlasiligiVeMaliyetJS(
     helikopterTasimaKapasitesi, sonobuoyIkmalSuresiDk,
     rotaOptimizasyonuEtkin,
     isDatumKnown, datumX_user, datumY_user,
-    costHeloHour, costSonobuoy,
+    costHeloHour, costSonobuoy, personelSaatlikMaliyet, ucusSaatiBasinaBakimMaliyeti,
     progressCallback = null,
     isCalledFromSA = false
 ) {
@@ -59,7 +59,7 @@ function hesaplaTespitOlasiligiVeMaliyetJS(
         denizaltiYollariVeTespitDurumu: [], fiiliBirakilanSonobuoySayisi: 0, helikopterHareketKaydi: helikopterHareketKaydi.length > 0 ? helikopterHareketKaydi : [{startX: helikopterStartXNm, startY: helikopterStartYNm, endX: helikopterStartXNm, endY: helikopterStartYNm, startTimeDk: 0, endTimeDk: 0, type: 'idle_at_base'}],
         gridPatternPlacementNote: gridPatternNote, isDatumKnown: isDatumKnown, varyans_p_sapka_oran: 0, ci_alt_yuzde: 0, ci_ust_yuzde: 0,
         toplamMaliyet: 0, tespitBasinaMaliyet: 0, ortalamaTespitZamaniDk: 0, optimizasyonMaliyetKazanci: 0,
-        dikeyAyrilmaMesafeleri: [], unoptimizedRoute: [] // YENİ: Boş sonuçlar için eklendi
+        dikeyAyrilmaMesafeleri: [], unoptimizedRoute: []
     });
 
     if (current_atilicakSonobuoySayisi <= 0) {
@@ -179,9 +179,14 @@ function hesaplaTespitOlasiligiVeMaliyetJS(
     kazanilanSureDk = Math.max(0, kazanilanSureDk);
 
     const fiiliBirakilanSayi = fiiliSonobuoyKonumlariVeAtisZamani.length;
-    const helikopterMaliyeti = (anlikToplamHelikopterOperasyonSuresiDk / 60.0) * (costHeloHour || 0);
+    const operasyonSuresiSaat = anlikToplamHelikopterOperasyonSuresiDk / 60.0;
+    
+    const helikopterMaliyeti = operasyonSuresiSaat * (costHeloHour || 0);
     const sonobuoyMaliyeti = fiiliBirakilanSayi * (costSonobuoy || 0);
-    const toplamMaliyet = helikopterMaliyeti + sonobuoyMaliyeti;
+    const personelMaliyeti = operasyonSuresiSaat * (personelSaatlikMaliyet || 0);
+    const bakimMaliyeti = operasyonSuresiSaat * (ucusSaatiBasinaBakimMaliyeti || 0);
+
+    const toplamMaliyet = helikopterMaliyeti + sonobuoyMaliyeti + personelMaliyeti + bakimMaliyeti;
     const tespitBasinaMaliyet = (tespitEdilenYolSayisi > 0) ? (toplamMaliyet / tespitEdilenYolSayisi) : 0;
     const ortalamaTespitZamaniDk = tumTespitSureleriDk.length > 0 ? tumTespitSureleriDk.reduce((a, b) => a + b, 0) / tumTespitSureleriDk.length : 0;
     const optimizasyonMaliyetKazanci = (kazanilanSureDk > 0) ? (kazanilanSureDk / 60.0) * (costHeloHour || 0) : 0;
@@ -195,8 +200,8 @@ function hesaplaTespitOlasiligiVeMaliyetJS(
         ci_alt_yuzde: parseFloat(ci_alt_yuzde.toFixed(2)), ci_ust_yuzde: parseFloat(ci_ust_yuzde.toFixed(2)), toplamMaliyet: parseFloat(toplamMaliyet.toFixed(2)),
         tespitBasinaMaliyet: parseFloat(tespitBasinaMaliyet.toFixed(2)), ortalamaTespitZamaniDk: parseFloat(ortalamaTespitZamaniDk.toFixed(2)),
         optimizasyonMaliyetKazanci: parseFloat(optimizasyonMaliyetKazanci.toFixed(2)),
-        dikeyAyrilmaMesafeleri: tumDikeyAyrilmaMesafeleriM, // YENİ: Veriyi sonuç objesine ekle
-        unoptimizedRoute: hamDropKonumlari, // YENİ: Optimize edilmemiş rotayı ekle
-        heloBase: { x: helikopterStartXNm, y: helikopterStartYNm } // YENİ: Helikopter üs bilgisini ekle
+        dikeyAyrilmaMesafeleri: tumDikeyAyrilmaMesafeleriM,
+        unoptimizedRoute: hamDropKonumlari,
+        heloBase: { x: helikopterStartXNm, y: helikopterStartYNm }
     };
 }
