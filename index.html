@@ -173,7 +173,7 @@
                 <legend>Maliyet Analizi Parametreleri</legend>
                 <div class="param-grid">
                     <div>
-                        <label for="costHeloHour">Birim Uçuş Saati Maliyeti ($): <span class="info-icon">❓<span class="tooltip-text">Helikopterin bir saatlik operasyon maliyetidir. Toplam helikopter operasyon süresi bu değerle çarpılarak uçuş maliyeti bulunur.</span></span></label>
+                        <label for="costHeloHour">Birim Uçuş Saati Maliyeti ($): <span class="info-icon">❓<span class="tooltip-text">Helikopterin bir saatlik yakıt ve temel operasyon maliyetidir.</span></span></label>
                         <input type="number" id="costHeloHour" min="0" placeholder="Örn: 5000">
                         <span class="error-message" id="costHeloHourError"></span>
                     </div>
@@ -181,6 +181,16 @@
                         <label for="costSonobuoy">Sonobuoy Başına Maliyet ($): <span class="info-icon">❓<span class="tooltip-text">Tek bir sonobuoy'un maliyetidir. Toplam bırakılan sonobuoy adedi bu değerle çarpılarak malzeme maliyeti bulunur.</span></span></label>
                         <input type="number" id="costSonobuoy" min="0" placeholder="Örn: 1200">
                         <span class="error-message" id="costSonobuoyError"></span>
+                    </div>
+                    <div>
+                        <label for="personelSaatlikMaliyet">Personel Saatlik Maliyeti ($): <span class="info-icon">❓<span class="tooltip-text">Helikopterdeki pilot, co-pilot ve sensör operatörü gibi kalifiye personelin bir saatlik toplam maliyetidir. Toplam maliyete eklenir.</span></span></label>
+                        <input type="number" id="personelSaatlikMaliyet" min="0" placeholder="Örn: 800">
+                        <span class="error-message" id="personelSaatlikMaliyetError"></span>
+                    </div>
+                    <div>
+                        <label for="ucusSaatiBasinaBakimMaliyeti">Uçuş Saati Başına Bakım Maliyeti ($): <span class="info-icon">❓<span class="tooltip-text">Helikopterin her uçuş saati için ayrılması gereken ortalama bakım, onarım ve revizyon maliyetidir.</span></span></label>
+                        <input type="number" id="ucusSaatiBasinaBakimMaliyeti" min="0" placeholder="Örn: 2500">
+                        <span class="error-message" id="ucusSaatiBasinaBakimMaliyetiError"></span>
                     </div>
                 </div>
             </fieldset>
@@ -404,30 +414,37 @@
                         <input type="number" id="eaMonteCarloRuns" min="50" max="500" step="50" value="100">
                     </div>
                 </div>
-                <h4>Değişken Parametre Aralıkları</h4>
-                 <div class="param-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-                     <div>
-                        <label>Sonobuoy Adedi Aralığı:</label>
+                <h4>Değişken Parametreler</h4>
+                <div id="eaVariableParamsContainer" class="param-grid" style="grid-template-columns: 1fr; gap: 15px;">
+                    <div>
+                        <label class="ea-param-select-label" style="flex-direction: row; align-items: center;">
+                            <input type="checkbox" name="ea-param" value="sonobuoyAdedi" checked style="margin-right: 10px;"> Sonobuoy Adedi Aralığı:
+                        </label>
                         <div class="range-inputs">
                            <input type="number" id="eaSonobuoyCountMin" value="5">
                            <input type="number" id="eaSonobuoyCountMax" value="50">
                         </div>
                     </div>
                     <div>
-                        <label>Sonar Yarıçapı (NM) Aralığı:</label>
+                        <label class="ea-param-select-label" style="flex-direction: row; align-items: center;">
+                            <input type="checkbox" name="ea-param" value="sonarYaricap" checked style="margin-right: 10px;"> Sonar Yarıçapı (NM) Aralığı:
+                        </label>
                          <div class="range-inputs">
                            <input type="number" id="eaSonarRadiusMin" value="1.0" step="0.1">
                            <input type="number" id="eaSonarRadiusMax" value="5.0" step="0.1">
                         </div>
                     </div>
                     <div>
-                        <label>Tespit Başarı Oranı Aralığı:</label>
+                        <label class="ea-param-select-label" style="flex-direction: row; align-items: center;">
+                           <input type="checkbox" name="ea-param" value="sonarTespitBasariOrani" checked style="margin-right: 10px;"> Tespit Başarı Oranı Aralığı:
+                        </label>
                          <div class="range-inputs">
                            <input type="number" id="eaDetectionProbMin" value="0.5" step="0.05">
                            <input type="number" id="eaDetectionProbMax" value="0.95" step="0.05">
                         </div>
                     </div>
                  </div>
+
 
                 <button id="eaRunButton" style="margin-top: 20px;">Etkinlik Sınırı Analizini Başlat</button>
                 <div id="eaProgressContainer" class="progress-container" style="display: none; margin-top: 15px;">
@@ -455,12 +472,18 @@
                     <div>
                         <label for="optObjective">Amaç Fonksiyonu:</label>
                         <select id="optObjective">
-                            <option value="maximize_detection_prob" selected>Tespit Olasılığını Maksimize Et</option>
+                            <option value="maximize_detection_prob" selected>Maks. Maliyet Altında P(d) Maksimizasyonu</option>
+                            <option value="minimize_cost">Min. P(d) İçin Maliyet Minimizasyonu</option>
+                            <option value="maximize_ratio">Maliyet-Etkinlik Oranı Maksimizasyonu</option>
                         </select>
                     </div>
                     <div>
-                        <label for="optMaxCost">Maksimum Toplam Maliyet ($) Kısıtı:</label>
+                        <label for="optMaxCost" id="optMaxCostLabel">Maksimum Toplam Maliyet ($) Kısıtı:</label>
                         <input type="number" id="optMaxCost" value="300000" step="10000">
+                    </div>
+                    <div id="optTargetPdContainer" style="display: none;">
+                        <label for="optTargetPd">Minimum Tespit Olasılığı (%) Hedefi:</label>
+                        <input type="number" id="optTargetPd" value="80" min="1" max="100" step="1">
                     </div>
                 </div>
 
@@ -518,7 +541,7 @@
 
         <div class="modal-section">
             <h3>1. Giriş ve Simülasyonun Amacı</h3>
-            <p>Bu simülasyon, Denizaltı Savunma Harbi (DSH) operasyonlarının planlanması ve analizi için geliştirilmiş, web tabanlı bir <strong>stokastik karar destek sistemi</strong> olarak tasarlanmıştır. DSH operasyonları; hedef konumu, hareket profili ve çevresel şartlar gibi yüksek derecede belirsizlik içeren karmaşık sistemlerdir. Bu aracın temel amacı, farklı operasyonel taktiklerin (örn: sonobuoy yerleşim stratejileri) ve kaynak atamalarının (örn: sonobuoy adedi, helikopter sorti sayısı), temel performans göstergeleri üzerindeki etkilerini nicel olarak değerlendirmektir. Bu göstergeler, hedefin Tespit Olasılığı (P&#x209A;) ve Toplam Operasyon Maliyeti (C<sub>total</sub>) arasındaki ödünleşimi (trade-off) analiz ederek en etkin harekat tarzının (Course of Action - COA) belirlenmesine yardımcı olmayı hedefler.</p>
+            <p>Bu simülasyon, Denizaltı Savunma Harbi (DSH) operasyonlarının planlanması ve analizi için geliştirilmiş, web tabanlı bir <strong>stokastik karar destek sistemi</strong> olarak tasarlanmıştır. DSH operasyonları; hedef konumu, hareket profili ve çevresel şartlar gibi yüksek derecede belirsizlik içeren karmaşık sistemlerdir. Bu aracın temel amacı, farklı operasyonel taktiklerin (örn: sonobuoy yerleşim stratejileri) ve kaynak atamalarının (örn: sonobuoy adedi, sonar yarıçapı), temel performans göstergeleri üzerindeki etkilerini nicel olarak değerlendirmektir. Bu göstergeler, hedefin <strong>Tespit Olasılığı (P&#x209A;)</strong> ve <strong>Toplam Operasyon Maliyeti (C<sub>total</sub>)</strong> arasındaki ödünleşimi (trade-off) analiz ederek en etkin harekat tarzının (Course of Action - COA) belirlenmesine yardımcı olmayı hedefler.</p>
         </div>
 
         <div class="modal-section">
@@ -526,7 +549,7 @@
             <p>Simülasyon, problemin özündeki olasılıksal yapı nedeniyle <strong>Monte Carlo</strong> yöntemini temel alır. Bu yöntem, analitik olarak çözümü zor veya imkansız olan sistemlerin davranışını, sistemi defalarca rastgele senaryolar üreterek çalıştırmak ve sonuçların istatistiksel dağılımını analiz etmek suretiyle tahmin eder.</p>
             <ul>
                 <li><strong>Temel Döngü:</strong> Simülasyon, kullanıcı tarafından belirlenen "Monte Carlo Yol Sayısı" (N) kadar tekrarlanır. N değerinin yüksek olması, sonuçların istatistiksel yakınsama ve güvenilirliğini artırır (Büyük Sayılar Yasası).</li>
-                <li><strong>Tekil Deneme (Replication):</strong> Her bir döngü, bağımsız bir simülasyon denemesidir. Bu denemede, başlangıç koşulları ve süreç içi değişkenler (denizaltının başlangıç konumu, rotasındaki ve derinliğindeki anlık sapmalar) olasılık dağılımlarından örneklenerek özgün bir "denizaltı yolu" senaryosu oluşturulur.</li>
+                <li><strong>Tekil Deneme (Replication):</strong> Her bir döngü, bağımsız bir simülasyon denemesidir. Bu denemede, denizaltının başlangıç konumu, rotasındaki ve derinliğindeki anlık sapmalar gibi başlangıç koşulları ve süreç içi değişkenler, olasılık dağılımlarından örneklenerek özgün bir "denizaltı yolu" senaryosu oluşturulur.</li>
                 <li><strong>Sonuçların Toplanması:</strong> Her bir denemenin sonucu ikilidir (binary): "tespit edildi" (1) veya "edilemedi" (0). Toplam tespit olasılığı (p&#x0302;), başarılı deneme sayısının toplam deneme sayısına oranıyla hesaplanır:</li>
             </ul>
             <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
@@ -538,16 +561,16 @@
             <h3>3. Varlık ve Çevre Modellemesi</h3>
             <p>Simülasyon içerisindeki tüm varlıklar ve çevresel faktörler, matematiksel ve algoritmik olarak aşağıdaki gibi modellenmiştir:</p>
             <ul>
-                <li><strong>Denizaltı Hareketi:</strong> Denizaltının rotası, ayrık zaman adımlarından oluşan bir <strong>stokastik süreç (sınırlı rastgele yürüyüş)</strong> ile modellenir. Bu süreç, iki ana bileşenden oluşur:
+                <li><strong>Denizaltı Hareketi:</strong> Denizaltının rotası, ayrık zaman adımlarından oluşan bir <strong>sınırlı rastgele yürüyüş (bounded random walk)</strong> süreci ile modellenir. Bu süreç, iki ana bileşenden oluşur:
                     <ol>
                         <li><strong>Ana Rota:</strong> Denizaltı, varsayılan olarak pozitif X ekseni boyunca ilerler.</li>
-                        <li><strong>Rastgele Sapmalar:</strong> Rota üzerindeki her bir kontrol noktasında, denizaltının Y (yanal) ve Z (dikey) konumlarına rastgele gürültü eklenir. Bu sapmaların büyüklüğü, <code>Denizaltı Y Rota Sapma Oranı</code> ve <code>Denizaltı Derinlik Sapma</code> parametreleri tarafından belirlenen sınırlar içinde kalır. Bu yaklaşım, denizaltının öngörülemez küçük manevralarını ve derinlik değişimlerini taklit eder.</li>
+                        <li><strong>Rastgele Sapmalar:</strong> Rota üzerindeki her bir kontrol noktasında, denizaltının Y (yanal) ve Z (dikey) konumlarına rastgele gürültü eklenir. Bu sapmaların büyüklüğü, <code>denizaltiRotaSapmaYuzdesi</code> ve <code>denizaltiDerinlikSapma</code> parametreleri tarafından belirlenen sınırlar içinde kalır. Bu yaklaşım, denizaltının öngörülemez küçük manevralarını ve derinlik değişimlerini taklit eder.</li>
                     </ol>
                 </li>
-                <li><strong>Datum Bilgisi ve Hedef Belirsizliği:</strong> "Datum", hedefin bilinen son istihbarat konumudur. Simülasyon, hedefin tam olarak datum noktasında olmadığını, bu noktanın etrafındaki bir <strong>belirsizlik alanı (Area of Uncertainty - AOU)</strong> içinde bulunduğunu varsayar. Denizaltının başlangıç konumu, datum noktasını merkez alan ve yarıçapı, <code>Sonar Yarıçapı</code> (R<sub>sonar</sub>) parametresinin dört katına kadar olabilen dairesel bir alan içerisinden <strong>üniform dağılıma</strong> göre rastgele seçilir. Bu, hedef konumundaki istihbarat belirsizliğini gerçekçi bir şekilde modeller.</li>
-                <li><strong>Sonobuoy Yerleşim Paternleri:</strong> Farklı taktiksel senaryolar için önceden tanımlanmış geometrik yerleşim desenleri (`simulation_helpers.js` içinde) sunulur: Izgara (Serpantin), Dikey Bariyer, Rastgele ve Dairesel.</li>
-                <li><strong>Helikopter Rota Optimizasyonu:</strong> "Rota Optimizasyonu" etkinleştirildiğinde, helikopterin sonobuoy bırakma sırası, <strong>Gezgin Satıcı Problemi'nin (Traveling Salesman Problem - TSP)</strong> bir çeşidi olarak ele alınır. Bu NP-zor problemin çözümü için, pratikte iyi ve hızlı sonuçlar üreten bir <strong>açgözlü algoritma (greedy algorithm)</strong> olan <strong>En Yakın Komşu (Nearest Neighbour) Sezgiseli</strong> kullanılır. Algoritma her adımda, helikopterin mevcut konumundan (başlangıçta üs, sonra bir önceki bıraktığı sonobuoy) kendisine en yakın olan ve henüz bırakılmamış sonobuoy hedefini belirleyerek o noktaya hareket etmesini sağlar. Bu işlem, helikopterin taşıma kapasitesi (`helikopterTasiyabilecegiKapasite`) dolana veya bırakılacak sonobuoy kalmayana kadar devam eder, ardından helikopter ikmal için üsse döner.</li>
-                <li><strong>Çevresel Faktörler:</strong> Su akıntısı, sabit bir sürat (`Akıntı Sürati`) ve yöne (`Akıntı Yönü`) sahip bir <strong>vektör</strong> olarak modellenir. Suya bırakılan her sonobuoy, bırakıldığı andan itibaren bu akıntı vektörünün etkisiyle zamanla doğrusal olarak sürüklenir. Saha dışına sürüklenen sonobuoy'lar etkisiz kabul edilir.</li>
+                <li><strong>Datum Bilgisi ve Hedef Belirsizliği:</strong> "Datum", hedefin bilinen son istihbarat konumudur. Simülasyon, hedefin tam olarak datum noktasında olmadığını, bu noktanın etrafındaki bir <strong>belirsizlik alanı (Area of Uncertainty - AOU)</strong> içinde bulunduğunu varsayar. Denizaltının başlangıç konumu, datum noktasını merkez alan ve yarıçapı, <code>sonarYaricap</code> parametresinin <strong>dört katına kadar</strong> olabilen dairesel bir alan içerisinden üniform dağılıma göre rastgele seçilir. Bu, hedef konumundaki istihbarat belirsizliğini gerçekçi bir şekilde modeller.</li>
+                <li><strong>Sonobuoy Yerleşim Paternleri:</strong> Farklı taktiksel senaryolar için önceden tanımlanmış geometrik yerleşim desenleri (<code>simulation_helpers.js</code> içinde) sunulur: Izgara (Serpantin), Dikey Bariyer, Rastgele ve Dairesel. Izgara paterni, saha boyutlarına ve istenen adede göre, yerleştirilebilen maksimum sonobuoy adedini otomatik olarak hesaplar ve gerekirse kullanıcıya not olarak bildirir.</li>
+                <li><strong>Helikopter Rota Optimizasyonu:</strong> "Rota Optimizasyonu" etkinleştirildiğinde, helikopterin sonobuoy bırakma sırası, <strong>Gezgin Satıcı Problemi'nin (Traveling Salesman Problem - TSP)</strong> bir çeşidi olarak ele alınır. Bu NP-zor problemin çözümü için, pratikte iyi ve hızlı sonuçlar üreten bir <strong>açgözlü algoritma (greedy algorithm)</strong> olan <strong>En Yakın Komşu (Nearest Neighbour) Sezgiseli</strong> kullanılır. Algoritma, <code>helikopterTasiyabilecegiKapasite</code> parametresini dikkate alarak her bir sorti için ayrı planlama yapar. Her adımda, helikopterin mevcut konumundan (başlangıçta üs, sonra bir önceki bıraktığı sonobuoy) kendisine en yakın olan ve henüz bırakılmamış sonobuoy hedefini belirleyerek o noktaya hareket etmesini sağlar.</li>
+                <li><strong>Çevresel Faktörler:</strong> Su akıntısı, sabit bir sürat (<code>akintiHizi</code>) ve yöne (<code>akintiYonu</code>) sahip bir <strong>vektör</strong> olarak modellenir. Suya bırakılan her sonobuoy, bırakıldığı andan itibaren bu akıntı vektörünün etkisiyle zamanla doğrusal olarak sürüklenir. Saha dışına sürüklenen sonobuoy'lar etkisiz kabul edilir.</li>
             </ul>
         </div>
 
@@ -555,15 +578,15 @@
             <h3>4. Tespit Mantığı ve Olasılık Hesabı</h3>
             <p>Bir tespit olayının gerçekleşmesi için iki koşulun <strong>ardışık olarak</strong> sağlanması gerekir:</p>
             <ol>
-                <li><strong>3 Boyutlu Geometrik Koşul:</strong> Denizaltının, bir sonobuoy'un etrafındaki küresel algılama hacmine girmesi gerekir. Bu yaklaşım, literatürde <strong>"Cookie-Cutter" Sonar Modeli</strong> olarak bilinen bir basitleştirmedir. Denizaltı (<sub>sub</sub>) ile sonobuoy (<sub>buoy</sub>) arasındaki anlık 3 boyutlu Öklid mesafesi (d) şu denklemle hesaplanır:
+                <li><strong>3 Boyutlu Geometrik Koşul:</strong> Denizaltının, bir sonobuoy'un etrafındaki küresel algılama hacmine girmesi gerekir. Bu yaklaşım, literatürde <strong>"Cookie-Cutter" Sonar Modeli</strong> olarak bilinen, hesaplama verimliliği yüksek bir basitleştirmedir. Denizaltı (<sub>sub</sub>) ile sonobuoy (<sub>buoy</sub>) arasındaki anlık 3 boyutlu Öklid mesafesi (d), derinlik (z) boyutu da dahil edilerek şu denklemle hesaplanır:
                     <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
                         d = &radic;[(x<sub>sub</sub> - x<sub>buoy</sub>)<sup>2</sup> + (y<sub>sub</sub> - y<sub>buoy</sub>)<sup>2</sup> + (z<sub>sub</sub> - z<sub>buoy</sub>)<sup>2</sup>]
                     </p>
-                    Eğer d &le; R<sub>sonar</sub> (Sonar Yarıçapı) ise geometrik koşul sağlanmış olur.
+                    Eğer d &le; <code>sonarYaricap</code> ise geometrik koşul sağlanmış olur.
                 </li>
-                <li><strong>Olasılıksal Tespit Koşulu:</strong> Geometrik koşul sağlansa bile tespit garanti değildir. <code>Sonar Tespit Başarı Oranı</code> (P<sub>detect</sub>), bu noktada bir tespitin gerçekleşme olasılığını temsil eder. Bu parametre; suyun katmanlı yapısı, denizaltının gürültü seviyesi gibi birçok karmaşık faktörün bir <strong>soyutlamasıdır</strong>. Simülasyon, bu koşulu bir <strong>Bernoulli Deneyi</strong> olarak modeller: 0 ile 1 arasında düzgün dağılımdan rastgele bir sayı (U(0,1)) üretilir. Eğer bu sayı < P<sub>detect</sub> ise, tespit başarılı kabul edilir.
+                <li><strong>Olasılıksal Tespit Koşulu:</strong> Geometrik koşul sağlansa bile tespit garanti değildir. <code>sonarTespitBasariOrani</code> (P<sub>detect</sub>), bu noktada bir tespitin gerçekleşme olasılığını temsil eder. Bu parametre; suyun katmanlı yapısı, denizaltının gürültü seviyesi, sonar performansı gibi birçok karmaşık faktörün bir <strong>soyutlamasıdır</strong>. Simülasyon, bu koşulu bir <strong>Bernoulli Deneyi</strong> olarak modeller: 0 ile 1 arasında düzgün dağılımdan rastgele bir sayı (U(0,1)) üretilir. Eğer bu sayı &lt; P<sub>detect</sub> ise, tespit başarılı kabul edilir.
                 </li>
-                <li><strong>Sabit (Statik) Hedef Tespiti:</strong> Denizaltı hızı '0' olarak ayarlandığında, simülasyonun zaman akışı değişir. Hareketli hedefin aksine, burada zaman her bir sonobuoy'un aktif ömrüne göre akar. Simülasyon, her bir sonobuoy'un aktif olduğu süre boyunca belirli zaman aralıklarında (`STATIC_TARGET_DETECTION_STEPS_PER_BUOY_LIFE` sabiti ile) tekrar tekrar tespit denemesi yaparak, sabit bir hedefin zaman içinde tespit edilme olasılığını doğru bir şekilde modeller.</li>
+                <li><strong>Sabit (Statik) Hedef Tespiti:</strong> Denizaltı hızı '0' olarak ayarlandığında, simülasyonun zaman akışı değişir. Hareketli hedefin aksine, burada zaman her bir sonobuoy'un aktif ömrüne göre akar. Simülasyon, her bir sonobuoy'un aktif olduğu süre boyunca belirli zaman aralıklarında (<code>STATIC_TARGET_DETECTION_STEPS_PER_BUOY_LIFE</code> sabiti ile) tekrar tekrar tespit denemesi yaparak, sabit bir hedefin zaman içinde tespit edilme olasılığını doğru bir şekilde modeller.</li>
             </ol>
         </div>
         
@@ -571,8 +594,8 @@
             <h3>5. Gelişmiş Analiz Araçları</h3>
             <p>Simülasyon, tekil senaryo analizinin ötesinde, daha derinlemesine stratejik çıkarımlar yapabilmek için üç adet gelişmiş analiz modülü sunar:</p>
             <ul>
-                <li><strong>Duyarlılık Analizi:</strong> Bu özellik, bir "Eğer... ise... (What-If)" analizi aracıdır. Seçilen bir girdi parametresinin (örn: Sonar Yarıçapı) belirli bir aralıkta sistematik olarak değiştirilmesinin, temel çıktılar (tespit olasılığı, maliyet vb.) üzerindeki etkisini bir grafikle sunar. Bu, operasyonel planın en "hassas" ve kritik parametrelerini belirlemeye yardımcı olur.</li>
-                <li><strong>Maliyet-Etkinlik Sınırı Analizi:</strong> Bu modül, yüzlerce farklı senaryoyu (farklı sonobuoy sayısı, sonar yarıçapı vb. kombinasyonları) otomatik olarak çalıştırır ve sonuçları bir maliyet-performans (cost-benefit) grafiğinde gösterir. Grafikteki **"Etkin Sınır" (Efficient Frontier)** çizgisi, belirli bir maliyet için elde edilebilecek maksimum tespit olasılığını gösteren en verimli (Pareto-optimal) senaryoları temsil eder. Bu, kaynakların en verimli şekilde nasıl tahsis edileceği konusunda güçlü bir içgörü sağlar.</li>
+                <li><strong>Duyarlılık Analizi:</strong> Bu özellik, bir "Eğer... ise... (What-If)" analizi aracıdır. Seçilen bir girdi parametresinin (örn: Sonar Yarıçapı) belirli bir aralıkta sistematik olarak değiştirilmesinin, temel çıktılar (tespit olasılığı, maliyet vb.) üzerindeki etkisini bir grafikle sunar. Bu analiz, hız için ana simülasyona göre daha düşük sayıda Monte Carlo denemesi kullanır.</li>
+                <li><strong>Maliyet-Etkinlik Sınırı Analizi:</strong> Bu modül, yüzlerce farklı senaryoyu (farklı sonobuoy sayısı, sonar yarıçapı vb. kombinasyonları) otomatik olarak çalıştırır ve sonuçları bir maliyet-performans (cost-benefit) grafiğinde gösterir. Grafikteki <strong>"Etkin Sınır" (Efficient Frontier)</strong> çizgisi, belirli bir maliyet için elde edilebilecek maksimum tespit olasılığını gösteren en verimli (Pareto-optimal) senaryoları temsil eder. Bu, kaynakların en verimli şekilde nasıl tahsis edileceği konusunda güçlü bir içgörü sağlar.</li>
                 <li><strong>Senaryo Optimizasyonu (Genetik Algoritma):</strong> Bu modül, belirlenen bir amaç (örn: tespit olasılığını maksimize et) ve kısıt (örn: maksimum toplam maliyet) doğrultusunda en iyi senaryoyu (parametre setini) bulmak için bir <strong>Genetik Algoritma (GA)</strong> çalıştırır. Algoritma; "popülasyon" adı verilen bir dizi potansiyel çözümü (senaryoyu) "nesiller" boyunca evrimleştirir. Her nesilde, "uygunluk" (fitness) fonksiyonu (amaç ve kısıtlara dayalı bir skor) en yüksek olan bireyler seçilir, parametreleri "çaprazlanır" (crossover) ve genetik çeşitlilik için rastgele "mutasyonlara" uğratılır. Bu süreç, kullanıcının tanımladığı arama uzayı içinde en optimal çözümü bulmayı hedefler.</li>
             </ul>
         </div>
@@ -581,23 +604,13 @@
             <h3>6. Performans ve Maliyet Metrikleri</h3>
             <p>Simülasyon, operasyonel başarıyı ve ekonomik verimliliği ölçmek için çeşitli metrikler üretir:</p>
             <ul>
-                <li><strong>Genel Tespit Olasılığı (p&#x0302;):</strong> Monte Carlo simülasyonu sonucunda bulunan tahmini tespit olasılığıdır.
-                    <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
-                        p&#x0302; = (Tespit Edilen Yol Sayısı) / (Toplam Yol Sayısı N)
-                    </p>
-                </li>
+                <li><strong>Genel Tespit Olasılığı (p&#x0302;):</strong> Monte Carlo simülasyonu sonucunda bulunan tahmini tespit olasılığıdır.</li>
                 <li><strong>%95 Güven Aralığı:</strong> Simülasyonla bulunan tahminin (p&#x0302;), gerçek tespit olasılığını hangi hassasiyetle temsil ettiğini gösterir. Standart Normal Dağılım yaklaşımı ile şu formülle hesaplanır:
                     <p style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0;">
                         Güven Aralığı = p&#x0302; &plusmn; 1.96 &times; &radic;[ (p&#x0302;(1-p&#x0302;)) / N ]
                     </p>
                 </li>
-                <li><strong>Maliyet Analizi:</strong> Toplam operasyon maliyeti (C<sub>total</sub>), iki ana bileşenden oluşur:
-                     <ul>
-                        <li><strong>Uçuş Maliyeti (C<sub>flight</sub>):</strong> C<sub>flight</sub> = (Toplam Uçuş Süresi (saat)) &times; (Birim Uçuş Saati Maliyeti)</li>
-                        <li><strong>Malzeme Maliyeti (C<sub>material</sub>):</strong> C<sub>material</sub> = (Kullanılan Sonobuoy Adedi) &times; (Sonobuoy Başına Maliyet)</li>
-                        <li>Ayrıca, stratejinin maliyet-etkinliğini gösteren <strong>"Tespit Başına Ortalama Maliyet"</strong> metriği de sunulur.</li>
-                    </ul>
-                </li>
+                <li><strong>Maliyet Analizi:</strong> Toplam operasyon maliyeti (C<sub>total</sub>), dört ana bileşenden oluşur: Helikopter uçuş (yakıt), personel, bakım ve tüketilen sonobuoy maliyetleri. Ayrıca, stratejinin maliyet-etkinliğini gösteren <strong>"Tespit Başına Ortalama Maliyet"</strong> metriği de sunulur.</li>
             </ul>
         </div>
 
@@ -607,14 +620,14 @@
             <ul>
                 <li><strong>Doğrulama (Verification - "Modeli doğru mu kodladık?"):</strong> Bu süreç, simülasyon kodunun, tasarlanan matematiksel ve mantıksal modeli hatasız bir şekilde çalıştırdığını teyit etmeyi amaçlar.
                     <ul>
-                        <li><strong>Aşırı Durum Testleri:</strong> Model, bilinen sonuçlar üretmesi beklenen ekstrem parametrelerle test edilmiştir. Örneğin, "Sonar Tespit Başarı Oranı" %100 ve denizaltı yolu bilerek bir sonobuoy'un menzilinden geçirildiğinde, tespitin her zaman gerçekleştiği doğrulanmıştır.</li>
-                        <li><strong>Mantıksal Tutarlılık:</strong> "Akıntı Hızı" sıfır girildiğinde, sonobuoy'ların zaman içinde konumlarını değiştirmediği gözlemlenmiştir. "Helikopter Rota Optimizasyonu" etkinleştirildiğinde, basit 3-4 noktalı senaryolarda toplam uçuş süresinin her zaman azaldığı veya eşit kaldığı teyit edilmiştir.</li>
-                        <li><strong>Birim ve Değer Kontrolü:</strong> Tüm hesaplamalarda kullanılan birimlerin (NM, knot, metre, dakika) birbirine doğru bir şekilde dönüştürüldüğü (`METERS_PER_NAUTICAL_MILE` sabiti gibi) ve arayüzden gelen girdilerin mantıksal sınırlar içinde olduğu (`ui_input_handler.js` içindeki validasyon kuralları) kontrol edilmiştir.</li>
+                        <li><strong>Aşırı Durum Testleri:</strong> Model, bilinen sonuçlar üretmesi beklenen ekstrem parametrelerle test edilmiştir. Örneğin, <code>sonarTespitBasariOrani</code> %100 ve denizaltı yolu bilerek bir sonobuoy'un menzilinden geçirildiğinde, tespitin her zaman gerçekleştiği doğrulanmıştır.</li>
+                        <li><strong>Mantıksal Tutarlılık:</strong> <code>akintiHizi</code> sıfır girildiğinde, sonobuoy'ların zaman içinde konumlarını değiştirmediği gözlemlenmiştir. "Helikopter Rota Optimizasyonu" etkinleştirildiğinde, basit 3-4 noktalı senaryolarda toplam uçuş süresinin her zaman azaldığı veya eşit kaldığı teyit edilmiştir.</li>
+                        <li><strong>Birim ve Değer Kontrolü:</strong> Tüm hesaplamalarda kullanılan birimlerin (NM, knot, metre, dakika) birbirine doğru bir şekilde dönüştürüldüğü (<code>METERS_PER_NAUTICAL_MILE</code> sabiti gibi) ve arayüzden gelen girdilerin mantıksal sınırlar içinde olduğu (<code>ui_input_handler.js</code> içindeki validasyon kuralları) kontrol edilmiştir.</li>
                     </ul>
                 </li>
                 <li><strong>Geçerleme (Validation - "Doğru modeli mi kodladık?"):</strong> Bu süreç, geliştirilen modelin gerçek dünyadaki sistemi veya problemi kabul edilebilir bir doğrulukla temsil edip etmediğini tartışır. Bu simülasyon bir "soyutlama" olduğu için geçerleme, modelin varsayımlarını ve bu varsayımların neden yapıldığını net bir şekilde ortaya koymayı içerir.
                     <ul>
-                        <li><strong>Bilinçli Tasarım Tercihleri:</strong> Modeldeki en önemli basitleştirme olan **"Cookie-Cutter" Sonar Modeli**, bilinçli bir tasarım tercihidir. Gerçek dünyadaki karmaşık akustik yayılım modelleri (örn: Sonar Denklemi), her bir Monte Carlo denemesi için fahiş hesaplama süreleri gerektirir. Bu model, binlerce senaryonun hızlı bir şekilde analiz edilmesine olanak tanıyarak, taktiksel seviyede (patern seçimi, kaynak ataması) bir "birinci derece yaklaşım" sunmak için yeterli kabul edilmiştir. Amaç, akustik fiziği birebir modellemek değil, farklı stratejilerin göreceli performansını karşılaştırmaktır.</li>
+                        <li><strong>Bilinçli Tasarım Tercihleri:</strong> Modeldeki en önemli basitleştirme olan <strong>"Cookie-Cutter" Sonar Modeli</strong>, bilinçli bir tasarım tercihidir. Gerçek dünyadaki karmaşık akustik yayılım modelleri (örn: Sonar Denklemi), her bir Monte Carlo denemesi için fahiş hesaplama süreleri gerektirir. Bu model, binlerce senaryonun hızlı bir şekilde analiz edilmesine olanak tanıyarak, taktiksel seviyede (patern seçimi, kaynak ataması) bir "birinci derece yaklaşım" sunmak için yeterli kabul edilmiştir. Amaç, akustik fiziği birebir modellemek değil, farklı stratejilerin göreceli performansını karşılaştırmaktır.</li>
                         <li><strong>Uzman Görüşü ve Mantıksallık:</strong> Denizaltı hareketinin "rastgele yürüyüş" ile modellenmesi, bir hedefin öngörülemez küçük kaçınma manevralarını temsil eder. Parametrelerin (örn: rota sapma yüzdesi) bir uzman tarafından ayarlanmasıyla model, gerçekçi davranış paternlerine yaklaştırılabilir.</li>
                     </ul>
                 </li>
@@ -629,7 +642,7 @@
                 <li><strong>"Cookie-Cutter" Sonar Modeli:</strong> Tespit olasılığı, sonar menzili içinde her noktada aynıdır ve menzil dışında sıfırdır. Gerçekte olasılık, mesafe ve diğer faktörlere bağlı olarak kademeli olarak azalır.</li>
                 <li><strong>Ayrık Zaman ve Uzay:</strong> Varlıkların rotaları, sürekli bir yol yerine ayrık kontrol noktalarından oluşan çizgilerle temsil edilir. Tespit kontrolleri sadece bu noktalarda yapılır.</li>
                 <li><strong>Sabit Çevresel Koşullar:</strong> Akıntı hızı ve yönü gibi çevresel faktörlerin operasyon boyunca değişmediği varsayılır.</li>
-                <li><strong>Mükemmel İletişim ve Anlık Bilgi:</strong> Simülasyon, bir sonobuoy'un tespit yaptığı anda bu bilginin operasyon merkezi tarafından anında öğrenildiğini varsayar. Gerçek dünyadaki iletişim gecikmeleri veya veri kaybı modellenmemiştir.</li>
+                <li><strong>Mükemmel Komuta-Kontrol:</strong> Simülasyon, bir sonobuoy'un tespit yaptığı anda bu bilginin operasyon merkezi tarafından anında öğrenildiğini varsayar. Gerçek dünyadaki iletişim gecikmeleri veya veri kaybı modellenmemiştir.</li>
                 <li><strong>Operasyonel Risklerin Göz Ardı Edilmesi:</strong> Model, helikopter veya sonobuoy arızaları, düşman karşı tedbirleri (örn: jammer, decoy) veya operasyonu etkileyebilecek diğer beklenmedik olaylar gibi risk faktörlerini içermez.</li>
                 <li><strong>İdeal Varlık Davranışları:</strong> Denizaltının, bir tespit olasılığı veya aktif bir sonobuoy varlığını hissettiğinde taktiksel kaçınma manevraları yapmadığı varsayılır.</li>
             </ul>
