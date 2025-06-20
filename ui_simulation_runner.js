@@ -12,7 +12,7 @@
 
 let lastSimulationResults = null;
 let lastSimulationParams = null;
-// let isSimulationRunning = false; // BU SATIR KALDIRILDI!
+// let isSimulationRunning = false; // Bu değişken ui_controller.js içinde merkezi olarak yönetiliyor.
 
 function setupSimulationRunner() {
     const runSimBtn = document.getElementById('runSimBtn');
@@ -60,7 +60,8 @@ function runSimulation() {
                 params.helikopterTasiyabilecegiKapasite, params.sonobuoyIkmalSuresiDk,
                 params.rotaOptimizasyonuEtkin,
                 params.isDatumKnown, params.datumX, params.datumY,
-                params.costHeloHour, params.costSonobuoy,
+                params.costHeloHour, params.costSonobuoy, 
+                params.personelSaatlikMaliyet, params.ucusSaatiBasinaBakimMaliyeti, // EKLENEN YENİ PARAMETRELER
                 (progress) => {
                     const progressBar = document.getElementById('progressBar');
                     const progressText = document.getElementById('progressText');
