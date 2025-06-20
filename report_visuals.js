@@ -43,7 +43,6 @@ const reportChartLayoutDefaults = {
     }
 };
 
-
 function plotHeloTimePieChart(results) {
     const chartDiv = document.getElementById('helo-time-pie-chart');
     if (!chartDiv) return;
@@ -64,12 +63,14 @@ function plotHeloTimePieChart(results) {
     }
 
     const data = [{
-        values: Object.values(timeBreakdown),
+        values: Object.values(timeBreakdown).map(v => v.toFixed(1)),
         labels: Object.keys(timeBreakdown),
         type: 'pie',
         hole: .4,
         textinfo: "label+percent",
         textposition: "inside",
+        hoverinfo: 'label+value+percent',
+        hovertemplate: '%{label}: %{value} dk<br>%{percent}<extra></extra>',
         marker: {
             colors: ['#38bdf8', '#f59e0b', '#f87171']
         }
@@ -77,7 +78,7 @@ function plotHeloTimePieChart(results) {
 
     const layout = {
         ...reportChartLayoutDefaults,
-        title: { ...reportChartLayoutDefaults.title, text: 'Helikopter Aktivite Süreleri' },
+        title: { ...reportChartLayoutDefaults.title, text: null }, // Başlık h3'te olduğu için grafikte kaldırıldı
         showlegend: true,
         height: 400
     };
@@ -111,12 +112,16 @@ function plotDetectionHeatmap(params, results) {
         y: detectionY,
         type: 'histogram2d',
         colorscale: 'Cividis', 
-        reversescale: true
+        reversescale: true,
+        colorbar: {
+            title: 'Tespit Sayısı',
+            titleside: 'right'
+        }
     }];
     
     const layout = {
         ...reportChartLayoutDefaults,
-        title: { ...reportChartLayoutDefaults.title, text: 'Tespitlerin Yoğunlaştığı Bölgeler'},
+        title: { ...reportChartLayoutDefaults.title, text: null},
         xaxis: { ...reportChartLayoutDefaults.xaxis, title: { ...reportChartLayoutDefaults.xaxis.title, text: 'Saha Uzunluğu (X - NM)' }, range: [0, params.sahaUzunluk] },
         yaxis: { ...reportChartLayoutDefaults.yaxis, title: { ...reportChartLayoutDefaults.yaxis.title, text: 'Saha Genişliği (Y - NM)' }, range: [0, params.sahaGenislik] }
     };
@@ -192,7 +197,7 @@ function plotBuoyEffectiveness(results) {
 
     const layout = {
         ...reportChartLayoutDefaults,
-        title: { ...reportChartLayoutDefaults.title, text: 'Sonobuoy Etkinlik Dağılımı (En Etkiliden Başlayarak)' },
+        title: { ...reportChartLayoutDefaults.title, text: null },
         xaxis: { ...reportChartLayoutDefaults.xaxis, title: { ...reportChartLayoutDefaults.xaxis.title, text: 'Sonobuoy Kimliği' } },
         yaxis: { ...reportChartLayoutDefaults.yaxis, title: { ...reportChartLayoutDefaults.yaxis.title, text: 'Yapılan Tespit Sayısı' } },
         bargap: 0.1
@@ -238,7 +243,7 @@ function plotDetectionTimes(results, params) {
 
     const layout = {
         ...reportChartLayoutDefaults,
-        title: { ...reportChartLayoutDefaults.title, text: 'Tespitlerin Zamana Göre Yoğunluğu' },
+        title: { ...reportChartLayoutDefaults.title, text: null },
         xaxis: { ...reportChartLayoutDefaults.xaxis, title: { ...reportChartLayoutDefaults.xaxis.title, text: 'Tespit Zamanı (Dakika)' } },
         yaxis: { ...reportChartLayoutDefaults.yaxis, title: { ...reportChartLayoutDefaults.yaxis.title, text: 'Tespit Sayısı' } },
         bargap: 0.05
@@ -251,8 +256,8 @@ function plotRouteComparison(results, params) {
     const chartDiv = document.getElementById('route-comparison-chart');
     if (!chartDiv) return;
 
-    if (!results.unoptimizedRoute || !results.sonobuoyKonumlariVeSirasi || !results.heloBase) {
-        chartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Optimizasyon verisi bulunamadı.</p>';
+    if (!results.unoptimizedRoute || !results.sonobuoyKonumlariVeSirasi || !results.heloBase || !params.rotaOptimizasyonuEtkin) {
+        chartDiv.innerHTML = '<p style="text-align: center; padding-top: 50px; color: var(--text-muted);">Rota optimizasyonu aktif edilmediği veya veri bulunamadığı için karşılaştırma yapılamadı.</p>';
         return;
     }
 
@@ -272,7 +277,7 @@ function plotRouteComparison(results, params) {
 
     const layout = {
         ...reportChartLayoutDefaults,
-        title: { ...reportChartLayoutDefaults.title, text: 'Rota Karşılaştırması' },
+        title: { ...reportChartLayoutDefaults.title, text: null },
         xaxis: { ...reportChartLayoutDefaults.xaxis, range: [0, params.sahaUzunluk] },
         yaxis: { ...reportChartLayoutDefaults.yaxis, range: [0, params.sahaGenislik], scaleanchor: 'x' },
         showlegend: true
@@ -302,11 +307,83 @@ function plotDetectionDepthHistogram(results) {
     
     const layout = {
         ...reportChartLayoutDefaults,
-        title: { ...reportChartLayoutDefaults.title, text: 'Dikey Ayrım Mesafesine Göre Tespit Sayısı' },
+        title: { ...reportChartLayoutDefaults.title, text: null },
         xaxis: { ...reportChartLayoutDefaults.xaxis, title: { ...reportChartLayoutDefaults.xaxis.title, text: 'Dikey Ayrım (Metre)' } },
         yaxis: { ...reportChartLayoutDefaults.yaxis, title: { ...reportChartLayoutDefaults.yaxis.title, text: 'Tespit Sayısı' } },
         bargap: 0.05
     };
 
     Plotly.newPlot(chartDiv, [trace], layout, {responsive: true});
+}
+
+function plotComparisonRadarChart(scenarios) {
+    const chartDiv = document.getElementById('comparison-radar-chart');
+    if (!chartDiv) return;
+
+    const metrics = [
+        { key: 'tespitOlasiligiYuzde', name: 'Tespit Olasılığı', higherIsBetter: true },
+        { key: 'toplamMaliyet', name: 'Toplam Maliyet', higherIsBetter: false },
+        { key: 'helikopterOperasyonSuresiDk', name: 'Operasyon Süresi', higherIsBetter: false },
+        { key: 'tespitBasinaMaliyet', name: 'Tespit Başına Maliyet', higherIsBetter: false }
+    ];
+    
+    const data = [];
+    const ranges = {};
+
+    // Min ve max değerleri bul
+    metrics.forEach(metric => {
+        let values = scenarios.map(s => {
+            const val = s.results[metric.key];
+            // Tespit başına maliyeti 0 olanları (N/A) geçici olarak en kötü değer yap
+            return (metric.key === 'tespitBasinaMaliyet' && val === 0) ? Infinity : val;
+        }).filter(v => isFinite(v));
+        
+        if (values.length > 0) {
+            ranges[metric.key] = { min: Math.min(...values), max: Math.max(...values) };
+        } else {
+            ranges[metric.key] = { min: 0, max: 1 };
+        }
+    });
+    
+    // Her senaryo için bir trace oluştur
+    scenarios.forEach(scenario => {
+        const r_values = metrics.map(metric => {
+            const range = ranges[metric.key];
+            let value = scenario.results[metric.key];
+
+            // Tespit başına maliyet N/A ise 0 puan ver
+            if (metric.key === 'tespitBasinaMaliyet' && value === 0) {
+                return 0;
+            }
+
+            if (range.max === range.min) return 0.5; // Tüm değerler aynıysa orta puan ver
+
+            let score = (value - range.min) / (range.max - range.min);
+            if (!metric.higherIsBetter) {
+                score = 1 - score;
+            }
+            return score;
+        });
+
+        data.push({
+            type: 'scatterpolar',
+            r: [...r_values, r_values[0]], // Grafiği kapatmak için ilk değeri sona ekle
+            theta: [...metrics.map(m => m.name), metrics[0].name],
+            fill: 'toself',
+            name: scenario.name
+        });
+    });
+
+    const layout = {
+        ...reportChartLayoutDefaults,
+        polar: {
+            radialaxis: { visible: true, range: [0, 1], showticklabels: false, showline: false },
+            angularaxis: { tickfont: { size: 12 } },
+            bgcolor: 'rgba(255, 255, 255, 0.05)'
+        },
+        title: { text: null },
+        showlegend: true
+    };
+    
+    Plotly.newPlot(chartDiv, data, layout, {responsive: true});
 }
