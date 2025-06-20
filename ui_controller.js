@@ -379,16 +379,28 @@ function setupOptimization() {
                 const optimizer = new GeneticOptimizer(optimizerConfig, baseParams, progressCallback);
                 const bestSolution = await optimizer.run();
                 
-                let resultHTML = `<strong>Optimizasyon Tamamlandı!</strong><br>Bulunan en iyi senaryo:<br>`;
+                let resultHTML = `<strong>Optimizasyon Tamamlandı!</strong><br>`; // Başlık kısmı
                 if (bestSolution && bestSolution.results) {
-                     resultHTML += 
-                    `- Tespit Olasılığı: <strong>%${bestSolution.results.tespitOlasiligiYuzde.toFixed(2)}</strong><br>
-                    - Toplam Maliyet: <strong>$${bestSolution.results.toplamMaliyet.toLocaleString('en-US')}</strong><br>
-                    - Parametreler: Sonobuoy Adedi = <strong>${bestSolution.params.sonobuoyAdedi}</strong>, Sonar Yarıçapı = <strong>${bestSolution.params.sonarYaricap.toFixed(2)} NM</strong>`;
-                } else {
-                    resultHTML += "Belirtilen kısıtlar altında uygun bir çözüm bulunamadı.";
-                }
-                resultElement.innerHTML = resultHTML;
+                // Gerekli değerleri daha kolay kullanmak için değişkenlere alalım.
+                const finalCost = bestSolution.results.toplamMaliyet;
+                const costConstraint = optimizerConfig.maxCost;
+
+                // EĞER SONUÇ, KISITI AŞIYORSA BİLGİLENDİRME NOTU EKLE
+               if (finalCost > costConstraint) {
+               const overagePercent = ((finalCost - costConstraint) / costConstraint * 100).toFixed(1);
+               resultHTML += `<em style="color: #facc15; display: block; margin-bottom: 10px;">Not: Bulunan en iyi senaryo, maliyet kısıtını %${overagePercent} aşmaktadır ancak en yüksek performansı sunduğu için seçilmiştir.</em>`;
+    }
+    
+               // Ana sonuç metni her durumda eklenir.
+               resultHTML += `<strong>Bulunan en iyi senaryo:</strong><br>
+             - Tespit Olasılığı: <strong>%${bestSolution.results.tespitOlasiligiYuzde.toFixed(2)}</strong><br>
+             - Toplam Maliyet: <strong>$${finalCost.toLocaleString('en-US')}</strong><br>
+             - Parametreler: Sonobuoy Adedi = <strong>${bestSolution.params.sonobuoyAdedi}</strong>, Sonar Yarıçapı = <strong>${bestSolution.params.sonarYaricap.toFixed(2)} NM</strong>`;
+    
+            } else {
+            resultHTML += "Belirtilen kısıtlar altında uygun bir çözüm bulunamadı.";
+}
+resultElement.innerHTML = resultHTML;
                 
             } catch (err) {
                 showUserMessage(`Optimizasyon sırasında hata: ${err.message}`, 'error');
