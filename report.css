@@ -11,6 +11,9 @@
     --text-muted: #9ca3af;      /* Daha soluk metinler, etiketler */
     --accent-primary: #38bdf8;  /* Ana Vurgu Rengi (Açık Mavi) */
     --accent-secondary: #f59e0b;/* İkincil Vurgu (Maliyet için Amber/Sarı) */
+    --positive-color: #4ade80; /* Başarı, kazanç (Yeşil) */
+    --negative-color: #f87171; /* Risk, kayıp (Kırmızı) */
+    --warning-color: #facc15;  /* Uyarı (Sarı) */
 }
 
 /* --- GENEL SAYFA AYARLARI --- */
@@ -27,7 +30,7 @@ body {
 
 /* --- ANA RAPOR KONTEYNERİ --- */
 .report-container {
-    max-width: 1100px; /* Varsayılan genişlik */
+    max-width: 1100px;
     margin: 20px auto;
     background-color: var(--bg-secondary);
     padding: 30px 40px;
@@ -38,7 +41,7 @@ body {
 
 /* --- ÜST ARAÇ ÇUBUĞU --- */
 .toolbar {
-    max-width: 1100px; /* Varsayılan genişlik */
+    max-width: 1100px;
     margin: 0 auto 15px auto;
     padding-bottom: 20px;
     display: flex;
@@ -48,10 +51,9 @@ body {
     transition: max-width 0.3s ease-in-out;
 }
 
-/* Karşılaştırma Modu için Genişletilmiş Konteyner */
 body.comparison-mode .report-container,
 body.comparison-mode .toolbar {
-    max-width: 1100px;
+    max-width: 1400px;
 }
 
 
@@ -75,7 +77,7 @@ body.comparison-mode .toolbar {
 }
 
 .toolbar button:hover {
-    background-color: #7dd3fc; /* Vurgu renginin açığı */
+    background-color: #7dd3fc;
     transform: translateY(-1px);
 }
 
@@ -105,7 +107,7 @@ h3 {
     font-size: 1.3em;
     color: var(--text-primary);
     margin-top: 25px;
-    margin-bottom: 8px;
+    margin-bottom: 15px;
     font-weight: 500;
 }
 
@@ -114,16 +116,42 @@ p, li {
     color: var(--text-secondary);
 }
 
-/* --- YÖNETİCİ ÖZETİ --- */
+/* --- YÖNETİCİ ÖZETİ & OTOMATİK YORUM --- */
 .summary-text {
     background-color: rgba(56, 189, 248, 0.1);
     border-left: 5px solid var(--accent-primary);
     padding: 20px 25px;
     font-style: normal;
     font-size: 1.05rem;
-    color: #e0f2fe; /* Vurgu rengine yakın açık bir renk */
+    color: #e0f2fe;
     border-radius: 0 8px 8px 0;
 }
+
+#narrative-summary-list ul {
+    list-style: none;
+    padding: 0;
+}
+#narrative-summary-list li {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 0 6px 6px 0;
+    display: flex;
+    align-items: flex-start;
+}
+#narrative-summary-list .icon {
+    font-size: 1.5em;
+    margin-right: 15px;
+    line-height: 1.4;
+}
+#narrative-summary-list .positive { border-color: var(--positive-color); }
+#narrative-summary-list .positive .icon { color: var(--positive-color); }
+#narrative-summary-list .negative { border-color: var(--negative-color); }
+#narrative-summary-list .negative .icon { color: var(--negative-color); }
+#narrative-summary-list .warning { border-color: var(--warning-color); }
+#narrative-summary-list .warning .icon { color: var(--warning-color); }
+
 
 /* --- Karşılaştırma Grid Konteyneri --- */
 .comparison-container {
@@ -191,22 +219,22 @@ p, li {
 }
 
 .geometry-grid {
-    display: flex;           /* Grid yerine Flex kullan */
-    flex-wrap: wrap;         /* Elemanların alt satıra geçmesine izin ver */
-    justify-content: center; /* Elemanları satırda mükemmel şekilde ortala */
-    gap: 20px;               /* Aradaki boşluk aynı kalsın */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
 }
 
 .geometry-grid .metric-card .value {
     font-size: 1.7em;
 }
 
-
 /* --- TABLO STİLLERİ --- */
 .report-container table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    font-size: 0.95rem;
 }
 
 .report-container th,
@@ -217,23 +245,12 @@ p, li {
 }
 
 .report-container th {
-    background-color: rgba(55, 65, 81, 0.5); /* gray-700 @ 50% */
+    background-color: rgba(55, 65, 81, 0.5);
     font-weight: 600;
     color: var(--text-primary);
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}
-
-/* Karşılaştırma Tablosu Stilleri */
-#report-params-container.comparison-container table td:not(:first-child),
-#report-params-container.comparison-container table th:not(:first-child) {
-    text-align: center;
-    font-family: 'Courier New', Courier, monospace;
-}
-#report-params-container.comparison-container table .highlight {
-    background-color: rgba(56, 189, 248, 0.1);
-    font-weight: bold;
 }
 
 .report-container tr:nth-of-type(even) {
@@ -243,6 +260,40 @@ p, li {
 .report-container tr:hover {
     background-color: rgba(56, 189, 248, 0.05);
 }
+
+/* --- KARŞILAŞTIRMA TABLOLARI ÖZEL STİLLERİ --- */
+#report-params-container.comparison-container table td:not(:first-child),
+#report-params-container.comparison-container table th:not(:first-child) {
+    text-align: center;
+}
+#report-params-container.comparison-container table .highlight {
+    background-color: rgba(56, 189, 248, 0.1);
+    font-weight: bold;
+}
+
+#relative-performance-table-container .positive-change { color: var(--positive-color); font-weight: 500; }
+#relative-performance-table-container .negative-change { color: var(--negative-color); font-weight: 500; }
+#relative-performance-table-container .neutral-change { color: var(--text-muted); }
+
+#scorecard-table-container .rank-1 { background-color: rgba(74, 222, 128, 0.15); font-weight: bold; }
+#scorecard-table-container .rank-2 { background-color: rgba(163, 230, 53, 0.1); }
+#scorecard-table-container .rank-last { background-color: rgba(239, 68, 68, 0.1); }
+
+#relative-performance-controls {
+    margin-bottom: 15px;
+}
+#relative-performance-controls label {
+    font-weight: 500;
+    margin-right: 10px;
+}
+#relative-performance-controls select {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
 
 /* --- GRAFİK ALANLARI --- */
 .chart-container {
@@ -347,7 +398,7 @@ p, li {
         margin: 1cm;
     }
 
-    .toolbar, .info-icon {
+    .toolbar, .info-icon, #relative-performance-controls {
         display: none !important;
     }
 
@@ -359,7 +410,7 @@ p, li {
         max-width: 100%;
     }
     
-    .metric-card, .summary-text, .scenario-column {
+    .metric-card, .summary-text, .scenario-column, #narrative-summary-list li {
         border: 1px solid #ccc;
     }
 
