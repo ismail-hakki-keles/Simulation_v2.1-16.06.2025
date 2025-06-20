@@ -12,11 +12,13 @@
 const metricTooltips = {
     'Tespit Olasılığı': 'Monte Carlo simülasyonu sonucunda, rastgele bir denizaltı yolunun oluşturulan sonobuoy bariyeri tarafından tespit edilme istatistiksel olasılığıdır.',
     'Güven Aralığı (%95)': 'Hesaplanan tespit olasılığının, %95 ihtimalle içinde bulunduğu aralığı ifade eder. Dar bir aralık, sonucun daha kararlı olduğunu gösterir.',
-    'Toplam Operasyon Maliyeti': 'Helikopterin toplam uçuş süresi ve kullanılan sonobuoy adedine göre hesaplanan toplam finansal maliyettir.',
+    'Toplam Operasyon Maliyeti': 'Helikopterin toplam uçuş süresi (yakıt, personel, bakım dahil) ve kullanılan sonobuoy adedine göre hesaplanan toplam finansal maliyettir.',
     'Helikopter Operasyon Süresi': 'Helikopterin üsten ayrılıp, tüm sonobuoyları bırakıp üsse geri döndüğü ana kadar geçen toplam süredir.',
     'İstatistiksel Standart Hata': 'Tespit olasılığı tahmininin standart hatasıdır. Değer ne kadar düşükse, tahminin istatistiksel olarak o kadar hassas olduğu anlamına gelir.',
     'Ham Deneme Sonucu': 'Monte Carlo simülasyonunda gerçekleştirilen toplam deneme sayısı ve bunların kaç tanesinin başarılı tespit ile sonuçlandığını gösterir.',
-    'Helikopter Uçuş Maliyeti': 'Helikopterin toplam operasyon süresinin, girilen birim saatlik maliyet ile çarpılmasıyla elde edilen maliyettir.',
+    'Helikopter Uçuş Maliyeti': 'Helikopterin toplam operasyon süresinin, girilen birim saatlik yakıt maliyeti ile çarpılmasıyla elde edilen maliyettir.',
+    'Personel Maliyeti': 'Helikopterin toplam operasyon süresinin, girilen birim saatlik personel maliyeti ile çarpılmasıyla elde edilen maliyettir.',
+    'Bakım Maliyeti': 'Helikopterin toplam operasyon süresinin, girilen birim saatlik bakım maliyeti ile çarpılmasıyla elde edilen maliyettir.',
     'Tüketilen Sonobuoy Maliyeti': 'Operasyonda kullanılan fiili sonobuoy sayısının, girilen birim maliyet ile çarpılmasıyla elde edilen maliyettir.',
     'Ortalama 3D Tespit Mesafesi': 'Tüm başarılı tespit anlarında, denizaltı ile tespiti yapan sonobuoy arasındaki ortalama 3 boyutlu (hipotenüs) mesafedir.',
     'Minimum Tespit Mesafesi': 'Gerçekleşen en yakın mesafeli tespittir. Sonar performansının en iyi senaryodaki etkinliğini gösterir.',
@@ -50,13 +52,19 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('report-title').textContent = "Senaryo Karşılaştırma Raporu";
             const scenarios = reportPackage.data;
             
+            // Karşılaştırma bölümlerini göster
+            document.getElementById('comparison-visuals-section').style.display = 'block';
+            document.getElementById('relative-performance-section').style.display = 'block';
+            document.getElementById('visuals-section').style.display = 'none';
+
             renderComparisonExecutiveSummary(scenarios);
+            renderScorecard(scenarios);
+            plotComparisonRadarChart(scenarios);
             renderComparisonSummaryAndStats(scenarios);
+            renderRelativePerformance(scenarios, scenarios[0].name); // Başlangıçta ilk senaryoyu referans al
+            populateReferenceScenarioDropdown(scenarios);
             renderComparisonParametersTable(scenarios);
             
-            const visualsSection = document.getElementById('visuals-section');
-            if(visualsSection) visualsSection.style.display = 'none';
-
         } else if (reportPackage.type === 'single') {
             // --- TEKLİ RAPOR OLUŞTURMA ---
             document.body.classList.remove('comparison-mode');
@@ -65,10 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const params = singleScenario.params;
             const results = singleScenario.results;
             
-            const visualsSection = document.getElementById('visuals-section');
-            if(visualsSection) visualsSection.style.display = 'block';
+            document.getElementById('visuals-section').style.display = 'block';
+            document.getElementById('comparison-visuals-section').style.display = 'none';
+            document.getElementById('relative-performance-section').style.display = 'none';
 
             renderSingleExecutiveSummary(params, results);
+            renderNarrativeSummary(results, params);
             renderSingleSummaryAndStats(results);
             renderSingleParametersTable(params, results);
             renderSingleCostBreakdown(params, results);
@@ -94,6 +104,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function populateReferenceScenarioDropdown(scenarios) {
+    const select = document.getElementById('referenceScenarioSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    scenarios.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.name;
+        option.textContent = s.name;
+        select.appendChild(option);
+    });
+    select.addEventListener('change', (e) => {
+        const selectedName = e.target.value;
+        const scenarios = JSON.parse(sessionStorage.getItem('simulationReportData')).data;
+        renderRelativePerformance(scenarios, selectedName);
+    });
+}
 
 function generatePdf() {
     const pdfButton = document.getElementById('createPdfBtn');
@@ -136,7 +162,8 @@ function generatePdf() {
         }
 
         const reportType = document.body.classList.contains('comparison-mode') ? 'karsilastirma' : 'tekli';
-        pdf.save(`simulasyon-raporu-${reportType}.pdf`);
+        const date = new Date().toLocaleDateString('tr-TR');
+        pdf.save(`simulasyon-raporu-${reportType}-${date}.pdf`);
         
         pdfButton.textContent = 'Bu Raporu PDF Olarak İndir';
         pdfButton.disabled = false;
