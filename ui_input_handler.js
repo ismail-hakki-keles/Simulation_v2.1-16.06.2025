@@ -35,6 +35,8 @@ const inputsToValidate = [
     { id: 'sonarTespitBasariOrani', name: 'Sonar Tespit Başarı Oranı', type: 'float', min: 0, max: 1, step: '0.01' },
     { id: 'costHeloHour', name: 'Birim Uçuş Saati Maliyeti', type: 'float', min: 0 },
     { id: 'costSonobuoy', name: 'Sonobuoy Başına Maliyet', type: 'float', min: 0 },
+    { id: 'personelSaatlikMaliyet', name: 'Personel Saatlik Maliyeti', type: 'float', min: 0 },
+    { id: 'ucusSaatiBasinaBakimMaliyeti', name: 'Uçuş Saati Başına Bakım Maliyeti', type: 'float', min: 0 },
     { id: 'simulasyonDenizaltiYolSayisi', name: 'Monte Carlo Yol Sayısı', type: 'int', min: 100, step: '100' },
     { id: 'ornekYolSayisi', name: 'Grafik İçin Örnek Yol Sayısı', type: 'int', min: 2, max: 100, step: '1' }
 ];
